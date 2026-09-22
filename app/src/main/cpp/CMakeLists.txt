@@ -8,6 +8,15 @@ file(GLOB PIKAFISH_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/pikafish/src/*.cpp")
 # places it in nativeLibraryDir (where we can extract and chmod +x it).
 add_library(pikafish SHARED ${PIKAFISH_SOURCES})
 
+# IS_64BIT must be set explicitly for 64-bit ABIs — Pikafish's Makefile sets
+# this flag to enable __int128 (u128) bitboard support; our CMake build must
+# replicate it. arm64-v8a and x86_64 are both 64-bit.
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(PIKAFISH_64BIT_FLAG "-DIS_64BIT")
+else()
+    set(PIKAFISH_64BIT_FLAG "")
+endif()
+
 target_compile_options(pikafish PRIVATE
     -std=c++17
     -O3
@@ -15,6 +24,7 @@ target_compile_options(pikafish PRIVATE
     -DNNUE_EMBEDDING_OFF
     -fno-exceptions
     -fno-rtti
+    ${PIKAFISH_64BIT_FLAG}
 )
 
 target_include_directories(pikafish PRIVATE
