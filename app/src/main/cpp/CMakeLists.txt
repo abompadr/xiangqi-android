@@ -4,6 +4,10 @@ project(pikafish)
 # Recursively collect all Pikafish .cpp files (src/ has subdirs: nnue/, nnue/features/, etc.)
 file(GLOB_RECURSE PIKAFISH_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/pikafish/src/*.cpp")
 
+# Exclude x86-only platform-specific directories
+list(FILTER PIKAFISH_SOURCES EXCLUDE REGEX ".*/universal/.*")
+list(FILTER PIKAFISH_SOURCES EXCLUDE REGEX ".*/external/.*")
+
 # Build as a shared library named libpikafish.so so the Android package manager
 # places it in nativeLibraryDir (where we can extract and chmod +x it).
 add_library(pikafish SHARED ${PIKAFISH_SOURCES})
