@@ -1,16 +1,15 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(pikafish)
 
-# Collect all Pikafish .cpp source files
-file(GLOB PIKAFISH_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/pikafish/src/*.cpp")
+# Recursively collect all Pikafish .cpp files (src/ has subdirs: nnue/, nnue/features/, etc.)
+file(GLOB_RECURSE PIKAFISH_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/pikafish/src/*.cpp")
 
-# Build as an executable named libpikafish.so so the Android package manager
+# Build as a shared library named libpikafish.so so the Android package manager
 # places it in nativeLibraryDir (where we can extract and chmod +x it).
 add_library(pikafish SHARED ${PIKAFISH_SOURCES})
 
 # IS_64BIT must be set explicitly for 64-bit ABIs — Pikafish's Makefile sets
-# this flag to enable __int128 (u128) bitboard support; our CMake build must
-# replicate it. arm64-v8a and x86_64 are both 64-bit.
+# this flag to enable __int128 (u128) bitboard support.
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(PIKAFISH_64BIT_FLAG "-DIS_64BIT")
 else()
