@@ -6,7 +6,12 @@ file(GLOB_RECURSE PIKAFISH_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/pikafish/src/*.c
 
 # Exclude x86-only platform-specific directories
 list(FILTER PIKAFISH_SOURCES EXCLUDE REGEX ".*/universal/.*")
-list(FILTER PIKAFISH_SOURCES EXCLUDE REGEX ".*/external/.*")
+
+# Exclude main.cpp — it defines main() which is invalid in a shared library
+list(FILTER PIKAFISH_SOURCES EXCLUDE REGEX ".*/main\\.cpp$")
+
+# Exclude x86-only assembly (huf_decompress_amd64.S) — not valid for ARM
+list(FILTER PIKAFISH_SOURCES EXCLUDE REGEX ".*\\.S$")
 
 # Build as a shared library named libpikafish.so so the Android package manager
 # places it in nativeLibraryDir (where we can extract and chmod +x it).
