@@ -21,11 +21,13 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Set up Android NDK
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install NDK
-        run: sdkmanager "ndk;27.0.12077973" "cmake;3.22.1"
+      - name: Accept SDK licenses and install NDK
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "ndk;27.0.12077973" "cmake;3.22.1"
 
       - name: Clone Pikafish source
         run: git clone --depth 1 https://github.com/official-pikafish/Pikafish.git app/src/main/cpp/pikafish
