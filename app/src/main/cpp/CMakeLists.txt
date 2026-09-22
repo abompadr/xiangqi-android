@@ -10,8 +10,13 @@ list(FILTER PIKAFISH_SOURCES EXCLUDE REGEX ".*/universal/.*")
 # Exclude main.cpp — it defines main() which is invalid in a shared library
 list(FILTER PIKAFISH_SOURCES EXCLUDE REGEX ".*/main\\.cpp$")
 
-# Exclude x86-only assembly (huf_decompress_amd64.S) — not valid for ARM
-list(FILTER PIKAFISH_SOURCES EXCLUDE REGEX ".*\\.S$")
+# The zstd huf_decompress_amd64.S assembly is x86_64-only; exclude it on ARM.
+# On x86_64 it must be included to satisfy HUF_decompress4X*_fast_asm_loop refs.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+    list(APPEND PIKAFISH_SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/pikafish/src/external/decompress/huf_decompress_amd64.S"
+    )
+endif()
 
 # Build as a shared library named libpikafish.so so the Android package manager
 # places it in nativeLibraryDir (where we can extract and chmod +x it).
