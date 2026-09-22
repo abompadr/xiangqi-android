@@ -10,14 +10,6 @@ list(FILTER PIKAFISH_SOURCES EXCLUDE REGEX ".*/universal/.*")
 # Exclude main.cpp — it defines main() which is invalid in a shared library
 list(FILTER PIKAFISH_SOURCES EXCLUDE REGEX ".*/main\\.cpp$")
 
-# The zstd huf_decompress_amd64.S assembly is x86_64-only; exclude it on ARM.
-# On x86_64 it must be included to satisfy HUF_decompress4X*_fast_asm_loop refs.
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-    list(APPEND PIKAFISH_SOURCES
-        "${CMAKE_CURRENT_SOURCE_DIR}/pikafish/src/external/decompress/huf_decompress_amd64.S"
-    )
-endif()
-
 # Build as a shared library named libpikafish.so so the Android package manager
 # places it in nativeLibraryDir (where we can extract and chmod +x it).
 add_library(pikafish SHARED ${PIKAFISH_SOURCES})
@@ -38,6 +30,10 @@ target_compile_options(pikafish PRIVATE
     -fno-exceptions
     -fno-rtti
     ${PIKAFISH_64BIT_FLAG}
+    # Disable zstd's x86-64 BMI2 asm path — the .S file is not assembled by
+    # the Android Gradle CMake integration, so the asm loop symbols are missing.
+    # The pure-C fallback path is used instead.
+    -DZSTD_ENABLE_ASM_X86_64_BMI2=0
 )
 
 target_include_directories(pikafish PRIVATE
