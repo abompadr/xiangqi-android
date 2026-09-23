@@ -10,8 +10,10 @@ list(FILTER PIKAFISH_SOURCES EXCLUDE REGEX ".*/universal/.*")
 # Exclude main.cpp — it defines main() which is invalid in a shared library
 list(FILTER PIKAFISH_SOURCES EXCLUDE REGEX ".*/main\\.cpp$")
 
-# Build as a shared library named libpikafish.so so the Android package manager
-# places it in nativeLibraryDir (where we can extract and chmod +x it).
+# JNI glue layer
+list(APPEND PIKAFISH_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/pikafish_jni.cpp")
+
+# Build as a shared library loaded by System.loadLibrary("pikafish")
 add_library(pikafish SHARED ${PIKAFISH_SOURCES})
 
 # IS_64BIT must be set explicitly for 64-bit ABIs — Pikafish's Makefile sets
@@ -27,7 +29,6 @@ target_compile_options(pikafish PRIVATE
     -O3
     -DNDEBUG
     -DNNUE_EMBEDDING_OFF
-    -fno-exceptions
     -fno-rtti
     ${PIKAFISH_64BIT_FLAG}
     # Disable zstd's x86-64 BMI2 asm path — the .S file is not assembled by
