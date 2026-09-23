@@ -16,6 +16,7 @@ class PikafishEngine(@Suppress("UNUSED_PARAMETER") context: Context) {
     private external fun nativeSend(cmd: String)
     private external fun nativeReadLine(): String
     private external fun nativeStop()
+    private external fun nativeIsAlive(): Boolean
 
     suspend fun start() = withContext(Dispatchers.IO) {
         nativeStart()
@@ -39,6 +40,7 @@ class PikafishEngine(@Suppress("UNUSED_PARAMETER") context: Context) {
         var best = ""
         while (true) {
             val line = nativeReadLine()
+            if (line.startsWith("ERROR:")) throw RuntimeException(line)
             if (line.startsWith("bestmove")) {
                 val parts = line.split(" ")
                 best = if (parts.size >= 2) parts[1] else ""
@@ -52,11 +54,15 @@ class PikafishEngine(@Suppress("UNUSED_PARAMETER") context: Context) {
         try { nativeStop() } catch (_: Exception) {}
     }
 
-    private fun send(cmd: String) = nativeSend(cmd)
+    private fun send(cmd: String) {
+        if (!nativeIsAlive()) throw RuntimeException("engine_not_alive")
+        nativeSend(cmd)
+    }
 
     private fun waitFor(token: String) {
         while (true) {
             val line = nativeReadLine()
+            if (line.startsWith("ERROR:")) throw RuntimeException(line)
             if (line.contains(token)) break
         }
     }
