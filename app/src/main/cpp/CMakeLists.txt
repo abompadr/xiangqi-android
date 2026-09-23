@@ -32,8 +32,9 @@ target_compile_options(pikafish PRIVATE
     ${PIKAFISH_64BIT_FLAG}
     # Disable zstd's x86-64 BMI2 asm path — the .S file is not assembled by
     # the Android Gradle CMake integration, so the asm loop symbols are missing.
-    # The pure-C fallback path is used instead.
-    -DZSTD_ENABLE_ASM_X86_64_BMI2=0
+    # ZSTD_DISABLE_ASM is the correct override: portability_macros.h checks
+    # !defined(ZSTD_DISABLE_ASM) before setting ZSTD_ENABLE_ASM_X86_64_BMI2=1.
+    -DZSTD_DISABLE_ASM
 )
 
 target_include_directories(pikafish PRIVATE
