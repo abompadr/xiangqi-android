@@ -30,8 +30,11 @@ jobs:
       - name: Decode keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > $GITHUB_WORKSPACE/xiangqi.jks
 
+      - name: Download NNUE network file
+        run: mkdir -p app/src/main/assets && curl -L "https://github.com/official-pikafish/Networks/releases/download/master-net/pikafish.nnue" -o app/src/main/assets/pikafish.nnue
+
       - name: Build signed release APK
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew assembleRelease --no-build-cache --stacktrace
         env:
           SIGNING_STORE_FILE: ${{ github.workspace }}/xiangqi.jks
           SIGNING_STORE_PASSWORD: ${{ secrets.KEY_PASSWORD }}
