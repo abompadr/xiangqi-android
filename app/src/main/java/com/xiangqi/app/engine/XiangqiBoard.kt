@@ -105,6 +105,8 @@ class XiangqiBoard {
         }
         return false
     }
+
+    fun deepCopy(): XiangqiBoard {
         val copy = XiangqiBoard()
         for (r in 0..9) for (f in 0..8) copy.board[r][f] = board[r][f]
         copy.redToMove = redToMove
