@@ -37,6 +37,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     private var timerJob: Job? = null
     private var skillLevel: Int = 10
+    private var playerIsRed: Boolean = true
     private var engineReady = false
 
     private val exceptionHandler = CoroutineExceptionHandler { _, t ->
@@ -49,6 +50,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     fun startGame(p: Profile) {
         skillLevel = p.skillLevel
+        playerIsRed = p.playAsRed
         val timeMs = if (p.timeControlMinutes == 0) Long.MAX_VALUE / 2
                      else p.timeControlMinutes * 60_000L
         val board = XiangqiBoard()
@@ -65,6 +67,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                 engine.setPosition(XiangqiBoard.START_FEN)
             }
             engineReady = true
+            // If player chose Black, engine plays first as Red
+            if (!playerIsRed) engineMove()
         }
     }
 
@@ -72,10 +76,10 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val s = _state.value
         if (s.status != GameStatus.PLAYING) return
         if (s.engineThinking) return
-        if (!s.board.redToMove) return   // player is always Red
+        if (s.board.redToMove != playerIsRed) return   // not player's turn
 
         val piece = s.board.get(sq)
-        val isOwnPiece = piece > 0
+        val isOwnPiece = if (playerIsRed) piece > 0 else piece < 0
 
         if (s.selected == null) {
             if (isOwnPiece) _state.value = s.copy(selected = sq)
@@ -83,7 +87,12 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             when {
                 s.selected == sq -> _state.value = s.copy(selected = null)
                 isOwnPiece       -> _state.value = s.copy(selected = sq)
-                else             -> applyPlayerMove(s.selected, sq)
+                else             -> {
+                    val legal = s.board.legalMovesFrom(s.selected)
+                    if (sq in legal) applyPlayerMove(s.selected, sq)
+                    else if (piece < 0) _state.value = s.copy(selected = null)  // tapped empty/enemy but illegal
+                    // else: tapped own piece already handled above
+                }
             }
         }
     }
@@ -93,6 +102,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val uci = "${from}${to}"
         s.board.applyUci(uci)
         _state.value = s.copy(selected = null, lastMove = from to to)
+        checkGameOver()
         if (_state.value.status == GameStatus.PLAYING) {
             viewModelScope.launch(exceptionHandler) { engineMove() }
         }
@@ -158,7 +168,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun checkGameOver() {
         val s = _state.value
-        // Check if either General has been captured (engine will have taken it)
+        // Check if either General has been captured
         var redGeneral = false; var blackGeneral = false
         for (r in 0..9) for (f in 0..8) {
             val p = s.board.get(r, f)
@@ -166,14 +176,14 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             if (p == -com.xiangqi.app.engine.Piece.GENERAL) blackGeneral = true
         }
         when {
-            !blackGeneral -> {
-                _state.value = s.copy(status = GameStatus.RED_WIN)
-                timerJob?.cancel()
-            }
-            !redGeneral -> {
-                _state.value = s.copy(status = GameStatus.BLACK_WIN)
-                timerJob?.cancel()
-            }
+            !blackGeneral -> { _state.value = s.copy(status = GameStatus.RED_WIN);   timerJob?.cancel(); return }
+            !redGeneral   -> { _state.value = s.copy(status = GameStatus.BLACK_WIN); timerJob?.cancel(); return }
+        }
+        // Checkmate: current side to move has no legal moves
+        if (!s.board.hasAnyLegalMove()) {
+            val winner = if (s.board.redToMove) GameStatus.BLACK_WIN else GameStatus.RED_WIN
+            _state.value = s.copy(status = winner)
+            timerJob?.cancel()
         }
     }
 
@@ -201,6 +211,20 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+    }
+
+    fun playAgain() {
+        val current = _state.value
+        // Reverse colors and restart with same profile settings
+        val reversedProfile = com.xiangqi.app.data.Profile(
+            id = 0,
+            name = "",
+            skillLevel = skillLevel,
+            timeControlMinutes = if (_state.value.redTimeMs > 30 * 60_000L * 10) 0
+                                  else (_state.value.redTimeMs / 60_000L).toInt(),
+            playAsRed = !playerIsRed
+        )
+        startGame(reversedProfile)
     }
 
     fun resign() {

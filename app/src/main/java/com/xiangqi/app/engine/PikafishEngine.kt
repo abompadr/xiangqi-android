@@ -4,7 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class PikafishEngine(@Suppress("UNUSED_PARAMETER") context: Context) {
+class PikafishEngine(context: Context) {
 
     companion object {
         init {
@@ -12,14 +12,22 @@ class PikafishEngine(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
     }
 
-    private external fun nativeStart()
+    private val nnuePath: String = run {
+        val dest = java.io.File(context.filesDir, "pikafish.nnue")
+        if (!dest.exists()) {
+            context.assets.open("pikafish.nnue").use { it.copyTo(dest.outputStream()) }
+        }
+        dest.absolutePath
+    }
+
+    private external fun nativeStart(nnuePath: String)
     private external fun nativeSend(cmd: String)
     private external fun nativeReadLine(): String
     private external fun nativeStop()
     private external fun nativeIsAlive(): Boolean
 
     suspend fun start() = withContext(Dispatchers.IO) {
-        nativeStart()
+        nativeStart(nnuePath)
         send("uci")
         waitFor("uciok")
         send("isready")

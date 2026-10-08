@@ -8,5 +8,6 @@ data class Profile(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
     val skillLevel: Int = 10,           // 0-20
-    val timeControlMinutes: Int = 0     // 0 = unlimited
+    val timeControlMinutes: Int = 0,    // 0 = unlimited
+    val playAsRed: Boolean = true
 )

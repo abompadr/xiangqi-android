@@ -92,7 +92,8 @@ private fun ProfileCard(
             Spacer(Modifier.height(4.dp))
             val diffLabel = difficultyLabel(profile.skillLevel)
             val timeLabel = if (profile.timeControlMinutes == 0) "Unlimited" else "${profile.timeControlMinutes} min"
-            Text("$diffLabel  ·  $timeLabel",
+            val colorLabel = if (profile.playAsRed) "Red" else "Black"
+            Text("$diffLabel  ·  $timeLabel  ·  $colorLabel",
                 color = Color(0xFFAAAAAA), fontSize = 14.sp)
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -123,6 +124,7 @@ private fun ProfileDialog(
     var name by remember { mutableStateOf(initial?.name ?: "") }
     var skill by remember { mutableIntStateOf(initial?.skillLevel ?: 10) }
     var time by remember { mutableIntStateOf(initial?.timeControlMinutes ?: 0) }
+    var playAsRed by remember { mutableStateOf(initial?.playAsRed ?: true) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -158,6 +160,19 @@ private fun ProfileDialog(
                             )
                         }
                 }
+                Text("Play as", style = MaterialTheme.typography.labelMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FilterChip(
+                        selected = playAsRed,
+                        onClick = { playAsRed = true },
+                        label = { Text("Red (first)") }
+                    )
+                    FilterChip(
+                        selected = !playAsRed,
+                        onClick = { playAsRed = false },
+                        label = { Text("Black (second)") }
+                    )
+                }
             }
         },
         confirmButton = {
@@ -165,7 +180,7 @@ private fun ProfileDialog(
                 onClick = {
                     if (name.isNotBlank()) {
                         onConfirm(Profile(id = initial?.id ?: 0, name = name.trim(),
-                            skillLevel = skill, timeControlMinutes = time))
+                            skillLevel = skill, timeControlMinutes = time, playAsRed = playAsRed))
                     }
                 }
             ) { Text("Save") }

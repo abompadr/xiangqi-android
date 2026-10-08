@@ -3,23 +3,70 @@
 
 #include <jni.h>
 #include <android/log.h>
+#include <pthread.h>
+#include <signal.h>
+#include <unwind.h>
+#include <dlfcn.h>
 
 #include <atomic>
 #include <condition_variable>
 #include <deque>
+#include <functional>
 #include <mutex>
 #include <sstream>
 #include <streambuf>
 #include <string>
-#include <thread>
 
 #include "uci.h"
 #include "misc.h"
+#include "attacks.h"
+#include "position.h"
 
 #define LOG_TAG "PikafishJNI"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO,  LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+
+// ---------------------------------------------------------------------------
+// Signal handler: logs a backtrace on SIGSEGV/SIGABRT so we can identify
+// the exact crash location without a native debugger.
+// ---------------------------------------------------------------------------
+
+struct BacktraceState { void** current; void** end; };
+
+static _Unwind_Reason_Code unwind_callback(struct _Unwind_Context* ctx, void* arg) {
+    auto* state = static_cast<BacktraceState*>(arg);
+    uintptr_t pc = _Unwind_GetIP(ctx);
+    if (pc && state->current < state->end) {
+        *state->current++ = reinterpret_cast<void*>(pc);
+        return _URC_NO_REASON;
+    }
+    return _URC_END_OF_STACK;
+}
+
+static void crash_handler(int sig) {
+    LOGE("*** CRASH: signal %d ***", sig);
+    void* buffer[32];
+    BacktraceState state = {buffer, buffer + 32};
+    _Unwind_Backtrace(unwind_callback, &state);
+    int count = (int)(state.current - buffer);
+    for (int i = 0; i < count; ++i) {
+        Dl_info info;
+        if (dladdr(buffer[i], &info) && info.dli_sname)
+            LOGE("  #%02d  %p  %s  (%s)", i, buffer[i], info.dli_sname, info.dli_fname);
+        else
+            LOGE("  #%02d  %p  (?)", i, buffer[i]);
+    }
+    // Re-raise so Android's crash reporter still gets it.
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
+
+static void install_crash_handler() {
+    signal(SIGSEGV, crash_handler);
+    signal(SIGABRT, crash_handler);
+    signal(SIGBUS,  crash_handler);
+}
 
 // ---------------------------------------------------------------------------
 // Queue-backed stream buffers
@@ -124,12 +171,22 @@ public:
 // Global engine state
 // ---------------------------------------------------------------------------
 
+static std::string     g_nnuePath;
 static InputBuf*       g_inBuf       = nullptr;
 static OutputBuf*      g_outBuf      = nullptr;
 static std::streambuf* g_origCin     = nullptr;
 static std::streambuf* g_origCout    = nullptr;
-static std::thread     g_engineThread;
+static pthread_t       g_engineThread{};
+static bool            g_engineThreadStarted = false;
 static std::atomic<bool> g_engineDead{false};
+
+// pthread_create trampoline — takes ownership of the heap-allocated function.
+static void* engine_thread_trampoline(void* arg) {
+    auto* f = static_cast<std::function<void()>*>(arg);
+    (*f)();
+    delete f;
+    return nullptr;
+}
 
 // ---------------------------------------------------------------------------
 // JNI functions
@@ -138,13 +195,17 @@ static std::atomic<bool> g_engineDead{false};
 extern "C" {
 
 JNIEXPORT void JNICALL
-Java_com_xiangqi_app_engine_PikafishEngine_nativeStart(JNIEnv*, jobject) {
+Java_com_xiangqi_app_engine_PikafishEngine_nativeStart(JNIEnv* env, jobject, jstring nnuePathJ) {
     if (g_inBuf) {
         LOGI("nativeStart: already running");
         return;
     }
 
     LOGI("nativeStart: creating buffers");
+    const char* nnuePathC = env->GetStringUTFChars(nnuePathJ, nullptr);
+    g_nnuePath = nnuePathC ? nnuePathC : "";
+    if (nnuePathC) env->ReleaseStringUTFChars(nnuePathJ, nnuePathC);
+    LOGI("nativeStart: NNUE path = %s", g_nnuePath.c_str());
     g_inBuf      = new InputBuf();
     g_outBuf     = new OutputBuf();
     g_engineDead = false;
@@ -154,16 +215,24 @@ Java_com_xiangqi_app_engine_PikafishEngine_nativeStart(JNIEnv*, jobject) {
     g_origCout = std::cout.rdbuf(g_outBuf);
     LOGI("nativeStart: cin/cout redirected");
 
-    g_engineThread = std::thread([]() {
+    // Heap-allocate the closure so it survives past this function's stack frame.
+    auto* fn = new std::function<void()>([]() {
+        install_crash_handler();
         LOGI("Engine thread: starting UCIEngine");
         try {
             char  progName[] = "pikafish";
             char* argv[]     = {progName};
             LOGI("Engine thread: constructing CommandLine");
             Stockfish::CommandLine cli(1, argv);
-            LOGI("Engine thread: constructing UCIEngine");
+            LOGI("Engine thread: CommandLine done");
+            LOGI("Engine thread: about to call UCIEngine ctor");
+            Stockfish::Attacks::init();
+            Stockfish::Position::init();
             Stockfish::UCIEngine uci(std::move(cli));
-            LOGI("Engine thread: entering loop()");
+            LOGI("Engine thread: UCIEngine ctor done, entering loop()");
+            // Tell engine where to find the NNUE weights file.
+            if (!g_nnuePath.empty())
+                g_inBuf->push("setoption name EvalFile value " + g_nnuePath);
             uci.loop();
             LOGI("Engine thread: loop() returned normally");
         } catch (const std::exception& e) {
@@ -175,6 +244,24 @@ Java_com_xiangqi_app_engine_PikafishEngine_nativeStart(JNIEnv*, jobject) {
         g_engineDead = true;
         if (g_outBuf) g_outBuf->close();
     });
+
+    // Launch with 64 MB stack — the NNUE Network object is large enough to
+    // overflow the default 8 MB thread stack on Android emulators.
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setstacksize(&attr, 64 * 1024 * 1024);
+    int rc = pthread_create(&g_engineThread, &attr, engine_thread_trampoline, fn);
+    pthread_attr_destroy(&attr);
+
+    if (rc != 0) {
+        LOGE("nativeStart: pthread_create failed: %d", rc);
+        delete fn;
+        g_engineDead = true;
+        g_outBuf->close();
+    } else {
+        g_engineThreadStarted = true;
+        LOGI("nativeStart: engine thread launched");
+    }
 }
 
 JNIEXPORT void JNICALL
@@ -227,9 +314,10 @@ Java_com_xiangqi_app_engine_PikafishEngine_nativeStop(JNIEnv*, jobject) {
     // Unblock any pending readLine
     if (g_outBuf) g_outBuf->close();
 
-    if (g_engineThread.joinable()) {
+    if (g_engineThreadStarted) {
         LOGI("nativeStop: joining engine thread");
-        g_engineThread.join();
+        pthread_join(g_engineThread, nullptr);
+        g_engineThreadStarted = false;
         LOGI("nativeStop: engine thread joined");
     }
 

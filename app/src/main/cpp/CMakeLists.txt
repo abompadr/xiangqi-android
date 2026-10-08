@@ -36,6 +36,9 @@ target_compile_options(pikafish PRIVATE
     # ZSTD_DISABLE_ASM is the correct override: portability_macros.h checks
     # !defined(ZSTD_DISABLE_ASM) before setting ZSTD_ENABLE_ASM_X86_64_BMI2=1.
     -DZSTD_DISABLE_ASM
+    # Enable C++17 aligned operator new so that over-aligned types (alignas(64)
+    # in the NNUE weight arrays) get properly aligned heap allocations on Android.
+    -faligned-new
 )
 
 target_include_directories(pikafish PRIVATE
@@ -44,4 +47,4 @@ target_include_directories(pikafish PRIVATE
 
 # Link required Android libraries
 find_library(log-lib log)
-target_link_libraries(pikafish ${log-lib})
+target_link_libraries(pikafish ${log-lib} unwind)

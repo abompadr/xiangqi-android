@@ -1,3 +1,10 @@
 xiangqi.jks
 github_secrets.txt
 *.jks
+.gradle/
+.idea/
+local.properties
+app/.cxx/
+app/build/
+app/src/main/cpp/pikafish/
+app/src/main/assets/pikafish.nnue

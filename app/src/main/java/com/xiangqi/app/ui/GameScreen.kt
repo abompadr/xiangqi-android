@@ -119,12 +119,12 @@ fun GameScreen(profile: Profile, onBack: () -> Unit, vm: GameViewModel = viewMod
     // Game-over overlay
     if (state.status != GameStatus.PLAYING) {
         val msg = when (state.status) {
-            GameStatus.RED_WIN     -> "Red wins! 🎉"
-            GameStatus.BLACK_WIN   -> "Black wins!"
+            GameStatus.RED_WIN      -> "Red wins!"
+            GameStatus.BLACK_WIN    -> "Black wins!"
             GameStatus.ENGINE_ERROR -> "Engine error:\n${state.errorMessage}"
-            else                   -> "Draw"
+            else                    -> "Draw"
         }
-        GameOverOverlay(msg, onBack)
+        GameOverOverlay(msg, onPlayAgain = { vm.playAgain() }, onBack = onBack)
     }
 }
 
@@ -307,7 +307,7 @@ private fun XiangqiBoardView(
 
 // ── Game-over overlay ─────────────────────────────────────────────────────────
 @Composable
-private fun GameOverOverlay(message: String, onBack: () -> Unit) {
+private fun GameOverOverlay(message: String, onPlayAgain: () -> Unit, onBack: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -318,7 +318,12 @@ private fun GameOverOverlay(message: String, onBack: () -> Unit) {
             Text(message, color = Color.White, fontSize = 30.sp,
                 fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             Spacer(Modifier.height(24.dp))
-            Button(onClick = onBack) { Text("Back to Profiles") }
+            Button(
+                onClick = onPlayAgain,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE8B84B))
+            ) { Text("Play Again (swap colors)", color = Color.Black, fontWeight = FontWeight.Bold) }
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(onClick = onBack) { Text("Back to Profiles", color = Color.White) }
         }
     }
 }
