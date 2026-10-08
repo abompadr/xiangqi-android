@@ -111,6 +111,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun engineMove() {
         if (!engineReady) return
         _state.value = _state.value.copy(engineThinking = true)
+        delay(600)
         val s = _state.value
         // Update engine position with full move history
         val uci = withContext(Dispatchers.IO) {
