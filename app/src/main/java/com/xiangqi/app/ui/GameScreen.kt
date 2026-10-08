@@ -250,11 +250,11 @@ private fun XiangqiBoardView(
 
                 // Highlight: small square centred on the intersection
                 if (isSelected || isLastMove) {
-                    val hlSize = min(spacingW, spacingH)
+                    val hlSize = minOf(spacingW.value, spacingH.value).dp
                     Box(
                         modifier = Modifier
                             .offset(x = cx - hlSize / 2, y = cy - hlSize / 2)
-                            .size(hlSize)
+                            .size(width = hlSize, height = hlSize)
                             .background(if (isSelected) SELECT_COL else LAST_COL)
                     )
                 }
