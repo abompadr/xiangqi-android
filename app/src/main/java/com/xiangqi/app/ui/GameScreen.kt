@@ -166,118 +166,119 @@ private fun XiangqiBoardView(
     onSquare: (XqSquare) -> Unit
 ) {
     BoxWithConstraints(modifier = modifier) {
-        val cellW = maxWidth  / 9
-        val cellH = maxHeight / 10
+        // Intersections: 9 vertical lines × 10 horizontal lines.
+        // Spacing between adjacent lines:
+        val spacingW = maxWidth  / 8   // 8 gaps between 9 vertical lines
+        val spacingH = maxHeight / 9   // 9 gaps between 10 horizontal lines
 
         // Draw board lines and river via Canvas
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val cW = size.width / 9
-            val cH = size.height / 10
+            val sW = size.width  / 8f
+            val sH = size.height / 9f
 
             // Board background
             drawRect(color = BOARD_BG)
 
-            // River (ranks 4-5 gap)
+            // River band between horizontal lines 4 and 5 (ranks 4-5)
             drawRect(
                 color = RIVER_COLOR,
-                topLeft = Offset(0f, 4 * cH),
-                size = androidx.compose.ui.geometry.Size(size.width, 2 * cH)
+                topLeft = Offset(0f, 4 * sH),
+                size = androidx.compose.ui.geometry.Size(size.width, sH)
             )
 
-            val stroke = Stroke(width = 1.5f)
-
-            // Vertical lines
+            // Vertical lines: run from line r=0 to r=9 (full height)
+            // Inner columns (files 1-7) are interrupted at the river (between r=4 and r=5)
             for (f in 0..8) {
-                val x = f * cW
-                // Black side: full column
-                drawLine(LINE_COLOR, Offset(x, 0f), Offset(x, 4 * cH), strokeWidth = 1.5f)
-                // Red side: full column
-                drawLine(LINE_COLOR, Offset(x, 6 * cH), Offset(x, 10 * cH), strokeWidth = 1.5f)
-                // River: only edge columns continue through
+                val x = f * sW
+                drawLine(LINE_COLOR, Offset(x, 0f),      Offset(x, 4 * sH), strokeWidth = 1.5f)
+                drawLine(LINE_COLOR, Offset(x, 5 * sH),  Offset(x, 9 * sH), strokeWidth = 1.5f)
                 if (f == 0 || f == 8) {
-                    drawLine(LINE_COLOR, Offset(x, 4 * cH), Offset(x, 6 * cH), strokeWidth = 1.5f)
+                    drawLine(LINE_COLOR, Offset(x, 4 * sH), Offset(x, 5 * sH), strokeWidth = 1.5f)
                 }
             }
 
             // Horizontal lines
             for (r in 0..9) {
-                val y = r * cH
+                val y = r * sH
                 drawLine(LINE_COLOR, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.5f)
             }
 
-            // Palace diagonals — Black (ranks 7-9, files d-f = 3-5)
-            drawLine(LINE_COLOR, Offset(3*cW, 7*cH), Offset(5*cW, 9*cH), strokeWidth = 1.5f)
-            drawLine(LINE_COLOR, Offset(5*cW, 7*cH), Offset(3*cW, 9*cH), strokeWidth = 1.5f)
+            // Palace diagonals — Black (horizontal lines 0-2, files 3-5)
+            drawLine(LINE_COLOR, Offset(3*sW, 0*sH), Offset(5*sW, 2*sH), strokeWidth = 1.5f)
+            drawLine(LINE_COLOR, Offset(5*sW, 0*sH), Offset(3*sW, 2*sH), strokeWidth = 1.5f)
 
-            // Palace diagonals — Red (ranks 0-2, files d-f = 3-5)
-            drawLine(LINE_COLOR, Offset(3*cW, 0*cH), Offset(5*cW, 2*cH), strokeWidth = 1.5f)
-            drawLine(LINE_COLOR, Offset(5*cW, 0*cH), Offset(3*cW, 2*cH), strokeWidth = 1.5f)
+            // Palace diagonals — Red (horizontal lines 7-9, files 3-5)
+            drawLine(LINE_COLOR, Offset(3*sW, 7*sH), Offset(5*sW, 9*sH), strokeWidth = 1.5f)
+            drawLine(LINE_COLOR, Offset(5*sW, 7*sH), Offset(3*sW, 9*sH), strokeWidth = 1.5f)
         }
 
-        // River labels
+        // River labels — centred in the river band
         Box(
             modifier = Modifier
-                .offset(x = 0.dp, y = cellH * 4)
-                .width(cellW * 4.5f)
-                .height(cellH * 2)
-                .padding(4.dp),
+                .offset(x = 0.dp, y = spacingH * 4)
+                .width(spacingW * 4.5f)
+                .height(spacingH),
             contentAlignment = Alignment.Center
         ) {
-            Text("楚  河", color = LINE_COLOR, fontSize = (cellW.value * 0.5f).sp,
+            Text("楚  河", color = LINE_COLOR, fontSize = (spacingW.value * 0.5f).sp,
                 fontWeight = FontWeight.Bold)
         }
         Box(
             modifier = Modifier
-                .offset(x = cellW * 4.5f, y = cellH * 4)
-                .width(cellW * 4.5f)
-                .height(cellH * 2)
-                .padding(4.dp),
+                .offset(x = spacingW * 4.5f, y = spacingH * 4)
+                .width(spacingW * 4f)
+                .height(spacingH),
             contentAlignment = Alignment.Center
         ) {
-            Text("漢  界", color = LINE_COLOR, fontSize = (cellW.value * 0.5f).sp,
+            Text("漢  界", color = LINE_COLOR, fontSize = (spacingW.value * 0.5f).sp,
                 fontWeight = FontWeight.Bold)
         }
 
-        // Squares with highlight and piece tap areas
-        // Board is displayed rank 9 (black back rank) at top, rank 0 (red back rank) at bottom
+        // Pieces, highlights, and tap areas — all centred on intersections
+        // Display: rank 9 (black back rank) at top row (r=0), rank 0 (red) at bottom (r=9)
         for (r in 0..9) {
             for (f in 0..8) {
-                val displayRank = 9 - r   // rank 9 at top row, rank 0 at bottom
+                val displayRank = 9 - r
                 val sq = XqSquare(f, displayRank)
                 val isSelected = state.selected == sq
                 val isLastMove = state.lastMove?.let { it.first == sq || it.second == sq } == true
                 val piece = state.board.get(sq)
 
-                // Highlight box
+                // Intersection pixel centre
+                val cx = spacingW * f
+                val cy = spacingH * r
+
+                // Highlight: small square centred on the intersection
                 if (isSelected || isLastMove) {
+                    val hlSize = min(spacingW, spacingH)
                     Box(
                         modifier = Modifier
-                            .offset(x = cellW * f, y = cellH * r)
-                            .size(cellW, cellH)
+                            .offset(x = cx - hlSize / 2, y = cy - hlSize / 2)
+                            .size(hlSize)
                             .background(if (isSelected) SELECT_COL else LAST_COL)
                     )
                 }
 
-                // Tap area (full cell)
+                // Tap area: half-spacing pad around each intersection
                 Box(
                     modifier = Modifier
-                        .offset(x = cellW * f, y = cellH * r)
-                        .size(cellW, cellH)
+                        .offset(x = cx - spacingW / 2, y = cy - spacingH / 2)
+                        .size(spacingW, spacingH)
                         .clickable { onSquare(sq) }
                 )
 
-                // Piece
+                // Piece — centred on the intersection
                 if (piece != Piece.EMPTY) {
                     val isRed = piece > 0
                     val absPiece = kotlin.math.abs(piece)
                     val label = if (isRed) RED_LABELS[absPiece] ?: "?" else BLACK_LABELS[absPiece] ?: "?"
-                    val pieceSize = min(cellW.value, cellH.value) * 0.82f
+                    val pieceSize = min(spacingW.value, spacingH.value) * 0.82f
 
                     Box(
                         modifier = Modifier
                             .offset(
-                                x = cellW * f + cellW / 2 - (pieceSize / 2).dp,
-                                y = cellH * r + cellH / 2 - (pieceSize / 2).dp
+                                x = cx - (pieceSize / 2).dp,
+                                y = cy - (pieceSize / 2).dp
                             )
                             .size(pieceSize.dp)
                             .clip(CircleShape)
@@ -285,7 +286,6 @@ private fun XiangqiBoardView(
                             .clickable { onSquare(sq) },
                         contentAlignment = Alignment.Center
                     ) {
-                        // Outer ring
                         Canvas(modifier = Modifier.fillMaxSize()) {
                             val ringColor = if (isRed) RED_PIECE else BLACK_PIECE
                             drawCircle(color = ringColor, style = Stroke(width = size.width * 0.07f))
