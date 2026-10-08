@@ -90,7 +90,11 @@ fun GameScreen(profile: Profile, onBack: () -> Unit, vm: GameViewModel = viewMod
                 .padding(4.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Board is 9 cols × 10 rows; keep aspect ratio
+            // Board canvas: 9 vertical lines × 10 horizontal lines.
+            // Add half-a-spacing padding on every side so edge pieces are never clipped.
+            // The playable grid spans 8 horizontal gaps and 9 vertical gaps.
+            // With padding p_h = boardW/16 left+right and p_v = boardH/18 top+bottom,
+            // the canvas is boardW × boardH but the lines start half a gap from each edge.
             val boardAspect = 9f / 10f
             val availW = maxWidth.value
             val availH = maxHeight.value
@@ -103,9 +107,13 @@ fun GameScreen(profile: Profile, onBack: () -> Unit, vm: GameViewModel = viewMod
                 boardH = maxHeight
                 boardW = (availH * boardAspect).dp
             }
+            val padH = boardW / 16   // half of one horizontal spacing (boardW/8 / 2)
+            val padV = boardH / 18   // half of one vertical spacing (boardH/9 / 2)
             XiangqiBoardView(
                 state = state,
-                modifier = Modifier.size(boardW, boardH),
+                modifier = Modifier
+                    .size(boardW, boardH)
+                    .padding(horizontal = padH, vertical = padV),
                 onSquare = { vm.onSquareTapped(it) }
             )
         }
