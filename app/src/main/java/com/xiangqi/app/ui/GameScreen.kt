@@ -109,11 +109,12 @@ fun GameScreen(profile: Profile, onBack: () -> Unit, vm: GameViewModel = viewMod
             }
             val padH = boardW / 16   // half of one horizontal spacing (boardW/8 / 2)
             val padV = boardH / 18   // half of one vertical spacing (boardH/9 / 2)
+            // Expand the canvas by one full spacing in each dimension so the wooden
+            // board extends beyond the outermost grid lines, while the grid itself
+            // stays the same size. The view is bigger; pieces/lines are unchanged.
             XiangqiBoardView(
                 state = state,
-                modifier = Modifier
-                    .size(boardW, boardH)
-                    .padding(horizontal = padH, vertical = padV),
+                modifier = Modifier.size(boardW + padH * 2, boardH + padV * 2),
                 onSquare = { vm.onSquareTapped(it) }
             )
         }
@@ -174,57 +175,60 @@ private fun XiangqiBoardView(
     onSquare: (XqSquare) -> Unit
 ) {
     BoxWithConstraints(modifier = modifier) {
-        // Intersections: 9 vertical lines × 10 horizontal lines.
-        // Spacing between adjacent lines:
-        val spacingW = maxWidth  / 8   // 8 gaps between 9 vertical lines
-        val spacingH = maxHeight / 9   // 9 gaps between 10 horizontal lines
+        // The canvas is larger than the grid by one full spacing on each axis.
+        // Grid spacing is derived from the inner playable area (canvas minus margins).
+        val spacingW = maxWidth  / 10  // canvas = 8 gaps + 2 half-margins → 10 units wide
+        val spacingH = maxHeight / 11  // canvas = 9 gaps + 2 half-margins → 11 units tall
+        val marginX  = spacingW          // half-spacing margin on left and right
+        val marginY  = spacingH          // half-spacing margin on top and bottom
 
-        // Draw board lines and river via Canvas
+        // Draw board background, river, grid lines, and palace diagonals
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val sW = size.width  / 8f
-            val sH = size.height / 9f
+            val sW = size.width  / 10f
+            val sH = size.height / 11f
+            val mX = sW   // left/right margin
+            val mY = sH   // top/bottom margin
 
-            // Board background
+            // Wooden board background — full canvas including margins
             drawRect(color = BOARD_BG)
 
-            // River band between horizontal lines 4 and 5 (ranks 4-5)
+            // River band between horizontal lines 4 and 5
             drawRect(
                 color = RIVER_COLOR,
-                topLeft = Offset(0f, 4 * sH),
+                topLeft = Offset(0f, mY + 4 * sH),
                 size = androidx.compose.ui.geometry.Size(size.width, sH)
             )
 
-            // Vertical lines: run from line r=0 to r=9 (full height)
-            // Inner columns (files 1-7) are interrupted at the river (between r=4 and r=5)
+            // Vertical lines (interrupted at river for inner files)
             for (f in 0..8) {
-                val x = f * sW
-                drawLine(LINE_COLOR, Offset(x, 0f),      Offset(x, 4 * sH), strokeWidth = 1.5f)
-                drawLine(LINE_COLOR, Offset(x, 5 * sH),  Offset(x, 9 * sH), strokeWidth = 1.5f)
+                val x = mX + f * sW
+                drawLine(LINE_COLOR, Offset(x, mY),            Offset(x, mY + 4 * sH), strokeWidth = 1.5f)
+                drawLine(LINE_COLOR, Offset(x, mY + 5 * sH),   Offset(x, mY + 9 * sH), strokeWidth = 1.5f)
                 if (f == 0 || f == 8) {
-                    drawLine(LINE_COLOR, Offset(x, 4 * sH), Offset(x, 5 * sH), strokeWidth = 1.5f)
+                    drawLine(LINE_COLOR, Offset(x, mY + 4 * sH), Offset(x, mY + 5 * sH), strokeWidth = 1.5f)
                 }
             }
 
             // Horizontal lines
             for (r in 0..9) {
-                val y = r * sH
-                drawLine(LINE_COLOR, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.5f)
+                val y = mY + r * sH
+                drawLine(LINE_COLOR, Offset(mX, y), Offset(mX + 8 * sW, y), strokeWidth = 1.5f)
             }
 
-            // Palace diagonals — Black (horizontal lines 0-2, files 3-5)
-            drawLine(LINE_COLOR, Offset(3*sW, 0*sH), Offset(5*sW, 2*sH), strokeWidth = 1.5f)
-            drawLine(LINE_COLOR, Offset(5*sW, 0*sH), Offset(3*sW, 2*sH), strokeWidth = 1.5f)
+            // Palace diagonals — Black (rows 0-2, files 3-5)
+            drawLine(LINE_COLOR, Offset(mX + 3*sW, mY),        Offset(mX + 5*sW, mY + 2*sH), strokeWidth = 1.5f)
+            drawLine(LINE_COLOR, Offset(mX + 5*sW, mY),        Offset(mX + 3*sW, mY + 2*sH), strokeWidth = 1.5f)
 
-            // Palace diagonals — Red (horizontal lines 7-9, files 3-5)
-            drawLine(LINE_COLOR, Offset(3*sW, 7*sH), Offset(5*sW, 9*sH), strokeWidth = 1.5f)
-            drawLine(LINE_COLOR, Offset(5*sW, 7*sH), Offset(3*sW, 9*sH), strokeWidth = 1.5f)
+            // Palace diagonals — Red (rows 7-9, files 3-5)
+            drawLine(LINE_COLOR, Offset(mX + 3*sW, mY + 7*sH), Offset(mX + 5*sW, mY + 9*sH), strokeWidth = 1.5f)
+            drawLine(LINE_COLOR, Offset(mX + 5*sW, mY + 7*sH), Offset(mX + 3*sW, mY + 9*sH), strokeWidth = 1.5f)
         }
 
         // River labels — centred in the river band
         Box(
             modifier = Modifier
-                .offset(x = 0.dp, y = spacingH * 4)
-                .width(spacingW * 4.5f)
+                .offset(x = marginX, y = marginY + spacingH * 4)
+                .width(spacingW * 4f)
                 .height(spacingH),
             contentAlignment = Alignment.Center
         ) {
@@ -233,8 +237,8 @@ private fun XiangqiBoardView(
         }
         Box(
             modifier = Modifier
-                .offset(x = spacingW * 4.5f, y = spacingH * 4)
-                .width(spacingW * 4f)
+                .offset(x = marginX + spacingW * 4.5f, y = marginY + spacingH * 4)
+                .width(spacingW * 3.5f)
                 .height(spacingH),
             contentAlignment = Alignment.Center
         ) {
@@ -242,8 +246,8 @@ private fun XiangqiBoardView(
                 fontWeight = FontWeight.Bold)
         }
 
-        // Pieces, highlights, and tap areas — all centred on intersections
-        // Display: rank 9 (black back rank) at top row (r=0), rank 0 (red) at bottom (r=9)
+        // Pieces, highlights, and tap areas — centred on intersections
+        // Display: rank 9 (black back rank) at top (r=0), rank 0 (red) at bottom (r=9)
         for (r in 0..9) {
             for (f in 0..8) {
                 val displayRank = 9 - r
@@ -252,11 +256,11 @@ private fun XiangqiBoardView(
                 val isLastMove = state.lastMove?.let { it.first == sq || it.second == sq } == true
                 val piece = state.board.get(sq)
 
-                // Intersection pixel centre
-                val cx = spacingW * f
-                val cy = spacingH * r
+                // Intersection pixel centre (offset by margin)
+                val cx = marginX + spacingW * f
+                val cy = marginY + spacingH * r
 
-                // Highlight: small square centred on the intersection
+                // Highlight: square centred on the intersection
                 if (isSelected || isLastMove) {
                     val hlSize = minOf(spacingW.value, spacingH.value).dp
                     Box(
