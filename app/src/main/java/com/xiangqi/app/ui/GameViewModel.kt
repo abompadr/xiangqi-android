@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.xiangqi.app.data.Profile
+import com.xiangqi.app.BuildConfig
+import com.xiangqi.app.engine.GeminiClient
 import com.xiangqi.app.engine.PikafishEngine
 import com.xiangqi.app.engine.XiangqiBoard
 import com.xiangqi.app.engine.XqSquare
@@ -26,7 +28,9 @@ data class GameState(
     val status: GameStatus = GameStatus.PLAYING,
     val engineThinking: Boolean = false,
     val lastMove: Pair<XqSquare, XqSquare>? = null,
-    val errorMessage: String = ""
+    val errorMessage: String = "",
+    val commentary: String? = null,   // null=hidden, ""=loading, else=explanation text
+    val canExplain: Boolean = false,  // true after engine moves; reset on player move / take-back
 )
 
 class GameViewModel(app: Application) : AndroidViewModel(app) {
@@ -101,7 +105,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val s = _state.value
         val uci = "${from}${to}"
         s.board.applyUci(uci)
-        _state.value = s.copy(selected = null, lastMove = from to to)
+        _state.value = s.copy(selected = null, lastMove = from to to,
+            canExplain = false, commentary = null)
         checkGameOver()
         if (_state.value.status == GameStatus.PLAYING) {
             viewModelScope.launch(exceptionHandler) { engineMove() }
@@ -155,7 +160,9 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             _state.value.board.applyUci(uci)
             _state.value = _state.value.copy(
                 engineThinking = false,
-                lastMove = from to to
+                lastMove = from to to,
+                canExplain = true,
+                commentary = null,
             )
             checkGameOver()
         } catch (t: Throwable) {
@@ -241,12 +248,52 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             XqSquare.fromAlg(history[history.size - 2].substring(0, 2)) to
             XqSquare.fromAlg(history[history.size - 2].substring(2, 4))
         else null
-        _state.value = s.copy(board = board, selected = null, lastMove = lastMove)
+        _state.value = s.copy(board = board, selected = null, lastMove = lastMove,
+            canExplain = false, commentary = null)
         viewModelScope.launch(exceptionHandler) {
             withContext(Dispatchers.IO) {
                 engine.setPosition(XiangqiBoard.START_FEN, board.moveHistory)
             }
         }
+    }
+
+    fun explainLastMove() {
+        val s = _state.value
+        val move = s.lastMove ?: return
+        _state.value = s.copy(commentary = "")   // empty string = loading
+        viewModelScope.launch(exceptionHandler) {
+            val result = try {
+                GeminiClient.explain(buildPrompt(s.board, move), BuildConfig.GEMINI_API_KEY)
+            } catch (t: Throwable) {
+                "Could not fetch explanation: ${t.message}"
+            }
+            _state.value = _state.value.copy(commentary = result)
+        }
+    }
+
+    private fun buildPrompt(board: XiangqiBoard, move: Pair<XqSquare, XqSquare>): String {
+        val (from, to) = move
+        val pieceInt = board.get(to)
+        val pieceName = when (kotlin.math.abs(pieceInt)) {
+            1 -> "Soldier (Bing/Zu)"
+            2 -> "Horse (Ma)"
+            3 -> "Elephant (Xiang)"
+            4 -> "Advisor (Shi)"
+            5 -> "Chariot (Ju)"
+            6 -> "Cannon (Pao)"
+            7 -> "General (Jiang/Shuai)"
+            else -> "piece"
+        }
+        val engineColor = if (playerIsRed) "Black" else "Red"
+        val playerColor = if (playerIsRed) "Red" else "Black"
+        return """
+            You are a friendly Chinese chess (Xiangqi) teacher helping a beginner learn.
+            The AI engine (playing $engineColor) just moved a $pieceName from $from to $to.
+            The human player is $playerColor.
+            In 1-2 sentences, explain what this move does and why it is strong or interesting.
+            Be specific about any immediate threats, tactical ideas, or positional goals.
+            Use simple language suitable for a beginner.
+        """.trimIndent()
     }
 
     fun resign() {

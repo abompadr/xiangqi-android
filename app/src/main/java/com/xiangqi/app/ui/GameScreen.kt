@@ -123,7 +123,50 @@ fun GameScreen(profile: Profile, onBack: () -> Unit, vm: GameViewModel = viewMod
         // Red timer (bottom — player side)
         TimerBar(state.redTimeMs, state.board.redToMove && state.status == GameStatus.PLAYING, "Red ▼")
 
-        Spacer(Modifier.height(16.dp))
+        // Explain button — shown after each engine move, dismissed when player moves
+        if (state.canExplain && state.commentary == null) {
+            TextButton(
+                onClick = { vm.explainLastMove() },
+                modifier = Modifier.padding(horizontal = 12.dp)
+            ) {
+                Text("💡 Explain this move", color = Color(0xFFE8B84B))
+            }
+        }
+
+        // Commentary card — loading spinner or explanation text
+        if (state.commentary != null) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A4A))
+            ) {
+                if (state.commentary.isEmpty()) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = Color(0xFFE8B84B)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Analyzing move...", color = Color(0xFFAAAAAA), fontSize = 13.sp)
+                    }
+                } else {
+                    Text(
+                        text = state.commentary,
+                        modifier = Modifier.padding(12.dp),
+                        color = Color(0xFFDDDDDD),
+                        fontSize = 13.sp,
+                        lineHeight = 19.sp
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
     }
 
     // Game-over overlay
