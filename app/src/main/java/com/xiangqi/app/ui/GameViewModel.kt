@@ -228,6 +228,27 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         startGame(reversedProfile)
     }
 
+    fun takeBack() {
+        val s = _state.value
+        if (s.status != GameStatus.PLAYING) return
+        if (s.engineThinking) return
+        // Need at least 2 moves: the player's move and the engine's reply
+        if (s.board.moveHistory.size < 2) return
+        val history = s.board.moveHistory.dropLast(2)
+        val board = XiangqiBoard()
+        history.forEach { board.applyUci(it) }
+        val lastMove = if (history.size >= 2)
+            XqSquare.fromAlg(history[history.size - 2].substring(0, 2)) to
+            XqSquare.fromAlg(history[history.size - 2].substring(2, 4))
+        else null
+        _state.value = s.copy(board = board, selected = null, lastMove = lastMove)
+        viewModelScope.launch(exceptionHandler) {
+            withContext(Dispatchers.IO) {
+                engine.setPosition(XiangqiBoard.START_FEN, board.moveHistory)
+            }
+        }
+    }
+
     fun resign() {
         _state.value = _state.value.copy(status = GameStatus.BLACK_WIN)
         timerJob?.cancel()

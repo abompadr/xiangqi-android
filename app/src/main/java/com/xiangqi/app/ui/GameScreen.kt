@@ -76,6 +76,7 @@ fun GameScreen(profile: Profile, onBack: () -> Unit, vm: GameViewModel = viewMod
             Spacer(Modifier.weight(1f))
             Text(profile.name, color = Color.White, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
+            TextButton(onClick = { vm.takeBack() }) { Text("↩ Take Back", color = Color(0xFF4A90D9)) }
             TextButton(onClick = { vm.resign() }) { Text("Resign", color = Color(0xFFE74C3C)) }
         }
 
