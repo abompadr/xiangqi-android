@@ -134,14 +134,15 @@ fun GameScreen(profile: Profile, onBack: () -> Unit, vm: GameViewModel = viewMod
         }
 
         // Commentary card — loading spinner or explanation text
-        if (state.commentary != null) {
+        val commentary = state.commentary
+        if (commentary != null) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 4.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A4A))
             ) {
-                if (state.commentary.isEmpty()) {
+                if (commentary.isEmpty()) {
                     Row(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -156,7 +157,7 @@ fun GameScreen(profile: Profile, onBack: () -> Unit, vm: GameViewModel = viewMod
                     }
                 } else {
                     Text(
-                        text = state.commentary,
+                        text = commentary,
                         modifier = Modifier.padding(12.dp),
                         color = Color(0xFFDDDDDD),
                         fontSize = 13.sp,
