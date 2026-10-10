@@ -25,6 +25,7 @@ fun ProfileScreen(onPlay: (Profile) -> Unit, vm: ProfileViewModel = viewModel())
     val profiles by vm.profiles.collectAsState()
     var editTarget by remember { mutableStateOf<Profile?>(null) }
     var showDialog by remember { mutableStateOf(false) }
+    var showRules by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -33,13 +34,22 @@ fun ProfileScreen(onPlay: (Profile) -> Unit, vm: ProfileViewModel = viewModel())
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        Text(
-            "象棋  Xiangqi",
-            color = ACCENT,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(24.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        ) {
+            Text(
+                "象棋  Xiangqi",
+                color = ACCENT,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(24.dp).weight(1f)
+            )
+            TextButton(onClick = { showRules = true }) {
+                Text("? Rules", color = Color(0xFF8888AA))
+            }
+            Spacer(Modifier.width(8.dp))
+        }
 
         LazyColumn(
             modifier = Modifier.weight(1f),
@@ -73,6 +83,10 @@ fun ProfileScreen(onPlay: (Profile) -> Unit, vm: ProfileViewModel = viewModel())
             onConfirm = { vm.save(it); showDialog = false },
             onDismiss = { showDialog = false }
         )
+    }
+
+    if (showRules) {
+        RulesDialog(onDismiss = { showRules = false })
     }
 }
 

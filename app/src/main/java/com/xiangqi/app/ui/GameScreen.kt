@@ -60,6 +60,7 @@ fun GameScreen(
     vm: GameViewModel = viewModel()
 ) {
     val state by vm.state.collectAsState()
+    var showRules by remember { mutableStateOf(false) }
 
     LaunchedEffect(profile) { vm.startGame(profile) }
 
@@ -84,6 +85,7 @@ fun GameScreen(
             Spacer(Modifier.weight(1f))
             TextButton(onClick = { vm.takeBack() }) { Text("↩ Take Back", color = Color(0xFF4A90D9)) }
             TextButton(onClick = { vm.resign() }) { Text("Resign", color = Color(0xFFE74C3C)) }
+            TextButton(onClick = { showRules = true }) { Text("?", color = Color(0xFF8888AA)) }
             TextButton(onClick = onSettings) { Text("⚙", color = Color(0xFF8888AA)) }
         }
 
@@ -175,6 +177,11 @@ fun GameScreen(
         }
 
         Spacer(Modifier.height(8.dp))
+    }
+
+    // Rules dialog
+    if (showRules) {
+        RulesDialog(onDismiss = { showRules = false })
     }
 
     // Game-over overlay
