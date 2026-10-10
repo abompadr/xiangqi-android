@@ -52,7 +52,13 @@ private val BLACK_LABELS = mapOf(
 )
 
 @Composable
-fun GameScreen(profile: Profile, onBack: () -> Unit, vm: GameViewModel = viewModel()) {
+fun GameScreen(
+    profile: Profile,
+    onBack: () -> Unit,
+    onSettings: () -> Unit,
+    geminiApiKey: String,
+    vm: GameViewModel = viewModel()
+) {
     val state by vm.state.collectAsState()
 
     LaunchedEffect(profile) { vm.startGame(profile) }
@@ -78,6 +84,7 @@ fun GameScreen(profile: Profile, onBack: () -> Unit, vm: GameViewModel = viewMod
             Spacer(Modifier.weight(1f))
             TextButton(onClick = { vm.takeBack() }) { Text("↩ Take Back", color = Color(0xFF4A90D9)) }
             TextButton(onClick = { vm.resign() }) { Text("Resign", color = Color(0xFFE74C3C)) }
+            TextButton(onClick = onSettings) { Text("⚙", color = Color(0xFF8888AA)) }
         }
 
         // Black timer (top — engine side)
@@ -126,7 +133,7 @@ fun GameScreen(profile: Profile, onBack: () -> Unit, vm: GameViewModel = viewMod
         // Explain button — shown after each engine move, dismissed when player moves
         if (state.canExplain && state.commentary == null) {
             TextButton(
-                onClick = { vm.explainLastMove() },
+                onClick = { vm.explainLastMove(geminiApiKey) },
                 modifier = Modifier.padding(horizontal = 12.dp)
             ) {
                 Text("💡 Explain this move", color = Color(0xFFE8B84B))

@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.xiangqi.app.data.Profile
-import com.xiangqi.app.BuildConfig
 import com.xiangqi.app.engine.GeminiClient
 import com.xiangqi.app.engine.PikafishEngine
 import com.xiangqi.app.engine.XiangqiBoard
@@ -257,13 +256,13 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun explainLastMove() {
+    fun explainLastMove(apiKey: String) {
         val s = _state.value
         val move = s.lastMove ?: return
         _state.value = s.copy(commentary = "")   // empty string = loading
         viewModelScope.launch(exceptionHandler) {
             val result = try {
-                GeminiClient.explain(buildPrompt(s.board, move), BuildConfig.GEMINI_API_KEY)
+                GeminiClient.explain(buildPrompt(s.board, move), apiKey)
             } catch (t: Throwable) {
                 "Could not fetch explanation: ${t.message}"
             }
