@@ -8,8 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignmentimport androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -21,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.xiangqi.app.data.Profile
+import com.xiangqi.app.data.SavedGame
 import com.xiangqi.app.engine.Piece
 import com.xiangqi.app.engine.XiangqiBoard
 import com.xiangqi.app.engine.XqSquare
@@ -57,17 +57,25 @@ fun GameScreen(
     onBack: () -> Unit,
     onSettings: () -> Unit,
     geminiApiKey: String,
+    resume: SavedGame? = null,
     vm: GameViewModel = viewModel()
 ) {
     val state by vm.state.collectAsState()
     var showRules by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(profile) { vm.startGame(profile) }
+    LaunchedEffect(profile) { vm.startGame(profile, resume) }
 
+    Scaffold(
+        containerColor = BG,
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { innerPadding ->
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(BG)
+            .padding(innerPadding)
             .statusBarsPadding()
             .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -94,8 +102,11 @@ fun GameScreen(
         ) {
             TextButton(onClick = { vm.takeBack() }) { Text("↩ Take Back", color = Color(0xFF4A90D9)) }
             TextButton(onClick = { vm.resign() }) { Text("Resign", color = Color(0xFFE74C3C)) }
+            TextButton(onClick = {
+                vm.saveGame { scope.launch { snackbarHostState.showSnackbar("Game saved!") } }
+            }) { Text("💾 Save", color = Color(0xFF4CAF50)) }
             TextButton(onClick = { showRules = true }) { Text("? Rules", color = Color(0xFF8888AA)) }
-            TextButton(onClick = onSettings) { Text("⚙ Settings", color = Color(0xFF8888AA)) }
+            TextButton(onClick = onSettings) { Text("⚙", color = Color(0xFF8888AA)) }
         }
 
         // Black timer (top — engine side)
@@ -203,6 +214,7 @@ fun GameScreen(
         }
         GameOverOverlay(msg, onPlayAgain = { vm.playAgain() }, onBack = onBack)
     }
+    } // end Scaffold
 }
 
 // ── Timer bar ─────────────────────────────────────────────────────────────────

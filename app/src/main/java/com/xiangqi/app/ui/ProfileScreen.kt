@@ -15,14 +15,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.xiangqi.app.data.Profile
+import com.xiangqi.app.data.SavedGame
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private val BG      = Color(0xFF1A1A2E)
 private val CARD_BG = Color(0xFF2A2A4A)
 private val ACCENT  = Color(0xFFE8B84B)   // gold, fitting for xiangqi
 
 @Composable
-fun ProfileScreen(onPlay: (Profile) -> Unit, vm: ProfileViewModel = viewModel()) {
+fun ProfileScreen(
+    onPlay: (Profile) -> Unit,
+    onResume: (SavedGame) -> Unit,
+    vm: ProfileViewModel = viewModel(),
+    savedGameVm: SavedGameViewModel = viewModel()
+) {
     val profiles by vm.profiles.collectAsState()
+    val savedGames by savedGameVm.savedGames.collectAsState()
     var editTarget by remember { mutableStateOf<Profile?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     var showRules by remember { mutableStateOf(false) }
@@ -63,6 +73,24 @@ fun ProfileScreen(onPlay: (Profile) -> Unit, vm: ProfileViewModel = viewModel())
                     onEdit = { editTarget = p; showDialog = true },
                     onDelete = { vm.delete(p) }
                 )
+            }
+            if (savedGames.isNotEmpty()) {
+                item {
+                    Text(
+                        "Saved Games",
+                        color = ACCENT,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
+                    )
+                }
+                items(savedGames, key = { it.id }) { game ->
+                    SavedGameCard(
+                        game = game,
+                        onResume = { onResume(game) },
+                        onDelete = { savedGameVm.delete(game) }
+                    )
+                }
             }
         }
 
@@ -209,4 +237,40 @@ private fun difficultyLabel(skill: Int) = when {
     skill <= 12 -> "Medium"
     skill <= 17 -> "Hard"
     else        -> "Expert"
+}
+
+@Composable
+private fun SavedGameCard(game: SavedGame, onResume: () -> Unit, onDelete: () -> Unit) {
+    val moveCount = if (game.moveHistory.isBlank()) 0
+                    else game.moveHistory.trim().split(" ").size
+    val date = SimpleDateFormat("MMM d, yyyy HH:mm", Locale.US).format(Date(game.savedAt))
+    val status = if (game.isCompleted) "Completed" else "In progress"
+    val colorLabel = if (game.playerIsRed) "Red" else "Black"
+
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = CARD_BG)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(game.profileName, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(2.dp))
+            Text("$date  ·  $moveCount moves  ·  $colorLabel  ·  $status",
+                color = Color(0xFFAAAAAA), fontSize = 12.sp)
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (!game.isCompleted) {
+                    Button(
+                        onClick = onResume,
+                        colors = ButtonDefaults.buttonColors(containerColor = ACCENT),
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Resume", color = Color.Black, fontWeight = FontWeight.Bold) }
+                }
+                OutlinedButton(
+                    onClick = onDelete,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE74C3C))
+                ) { Text("Delete") }
+            }
+        }
+    }
 }

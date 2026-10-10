@@ -3,7 +3,9 @@ package com.xiangqi.app.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.xiangqi.app.data.AppDatabase
 import com.xiangqi.app.data.Profile
+import com.xiangqi.app.data.SavedGame
 import com.xiangqi.app.engine.GeminiClient
 import com.xiangqi.app.engine.PikafishEngine
 import com.xiangqi.app.engine.XiangqiBoard
@@ -35,6 +37,7 @@ data class GameState(
 class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     private val engine = PikafishEngine(app)
+    private val savedGameDao = AppDatabase.getInstance(app).savedGameDao()
     private val _state = MutableStateFlow(GameState())
     val state: StateFlow<GameState> = _state
 
@@ -42,6 +45,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     private var skillLevel: Int = 10
     private var playerIsRed: Boolean = true
     private var engineReady = false
+    private var profileName: String = ""
+    private var timeControlMinutes: Int = 0
 
     private val exceptionHandler = CoroutineExceptionHandler { _, t ->
         _state.value = _state.value.copy(
@@ -51,27 +56,37 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    fun startGame(p: Profile) {
+    fun startGame(p: Profile, resume: SavedGame? = null) {
         skillLevel = p.skillLevel
         playerIsRed = p.playAsRed
+        profileName = p.name
+        timeControlMinutes = p.timeControlMinutes
         val timeMs = if (p.timeControlMinutes == 0) Long.MAX_VALUE / 2
                      else p.timeControlMinutes * 60_000L
         val board = XiangqiBoard()
+        val moves = resume?.moveHistory?.split(" ")?.filter { it.isNotBlank() } ?: emptyList()
+        moves.forEach { board.applyUci(it) }
+        val lastMove = if (moves.size >= 2)
+            XqSquare.fromAlg(moves.last().substring(0, 2)) to
+            XqSquare.fromAlg(moves.last().substring(2, 4))
+        else null
         _state.value = GameState(
             board = board,
             redTimeMs = timeMs,
-            blackTimeMs = timeMs
+            blackTimeMs = timeMs,
+            lastMove = lastMove,
+            canExplain = lastMove != null && board.redToMove == playerIsRed
         )
         startTimer()
         viewModelScope.launch(exceptionHandler) {
             withContext(Dispatchers.IO) {
                 engine.start()
                 engine.setSkillLevel(skillLevel)
-                engine.setPosition(XiangqiBoard.START_FEN)
+                engine.setPosition(XiangqiBoard.START_FEN, moves)
             }
             engineReady = true
-            // If player chose Black, engine plays first as Red
-            if (!playerIsRed) engineMove()
+            // If it's the engine's turn after resuming (or player chose Black), engine plays
+            if (board.redToMove != playerIsRed) engineMove()
         }
     }
 
@@ -293,6 +308,27 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             Be specific about any immediate threats, tactical ideas, or positional goals.
             Use simple language suitable for a beginner.
         """.trimIndent()
+    }
+
+    fun saveGame(onSaved: () -> Unit) {
+        val s = _state.value
+        val moves = s.board.moveHistory.joinToString(" ")
+        val isCompleted = s.status != GameStatus.PLAYING
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            val date = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US).format(java.util.Date(now))
+            savedGameDao.insert(SavedGame(
+                label = "$profileName · $date",
+                profileName = profileName,
+                skillLevel = skillLevel,
+                timeControlMinutes = timeControlMinutes,
+                playerIsRed = playerIsRed,
+                moveHistory = moves,
+                isCompleted = isCompleted,
+                savedAt = now
+            ))
+            onSaved()
+        }
     }
 
     fun resign() {
