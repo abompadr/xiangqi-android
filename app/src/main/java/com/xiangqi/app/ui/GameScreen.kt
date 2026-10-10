@@ -72,21 +72,30 @@ fun GameScreen(
             .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top bar
+        // Top bar — row 1: navigation + profile name
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp),
+                .padding(horizontal = 12.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextButton(onClick = onBack) { Text("← Back", color = Color(0xFF8888AA)) }
             Spacer(Modifier.weight(1f))
             Text(profile.name, color = Color.White, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
+        }
+        // Top bar — row 2: actions
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             TextButton(onClick = { vm.takeBack() }) { Text("↩ Take Back", color = Color(0xFF4A90D9)) }
             TextButton(onClick = { vm.resign() }) { Text("Resign", color = Color(0xFFE74C3C)) }
-            TextButton(onClick = { showRules = true }) { Text("?", color = Color(0xFF8888AA)) }
-            TextButton(onClick = onSettings) { Text("⚙", color = Color(0xFF8888AA)) }
+            TextButton(onClick = { showRules = true }) { Text("? Rules", color = Color(0xFF8888AA)) }
+            TextButton(onClick = onSettings) { Text("⚙ Settings", color = Color(0xFF8888AA)) }
         }
 
         // Black timer (top — engine side)
