@@ -48,3 +48,7 @@ target_include_directories(pikafish PRIVATE
 # Link required Android libraries
 find_library(log-lib log)
 target_link_libraries(pikafish ${log-lib} unwind)
+
+# 16 KB page-size alignment — required for Android 15+ (API 35+) devices.
+# Aligns ELF LOAD segments to 16 KB so the .so can be mapped on 16 KB-page kernels.
+target_link_options(pikafish PRIVATE -Wl,-z,max-page-size=16384)
