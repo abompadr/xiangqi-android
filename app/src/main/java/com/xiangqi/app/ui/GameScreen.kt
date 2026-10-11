@@ -57,8 +57,6 @@ private val BLACK_LABELS = mapOf(
 fun GameScreen(
     profile: Profile,
     onBack: () -> Unit,
-    onSettings: () -> Unit,
-    geminiApiKey: String,
     resume: SavedGame? = null,
     vm: GameViewModel = viewModel()
 ) {
@@ -108,7 +106,6 @@ fun GameScreen(
                 vm.saveGame { scope.launch { snackbarHostState.showSnackbar("Game saved!") } }
             }) { Text("💾 Save", color = Color(0xFF4CAF50)) }
             TextButton(onClick = { showRules = true }) { Text("? Rules", color = Color(0xFF8888AA)) }
-            TextButton(onClick = onSettings) { Text("⚙", color = Color(0xFF8888AA)) }
         }
 
         // Black timer (top — engine side)
@@ -153,53 +150,6 @@ fun GameScreen(
 
         // Red timer (bottom — player side)
         TimerBar(state.redTimeMs, state.board.redToMove && state.status == GameStatus.PLAYING, "Red ▼")
-
-        // Explain button — always takes up space to prevent board resize
-        TextButton(
-            onClick = { vm.explainLastMove(geminiApiKey) },
-            modifier = Modifier.padding(horizontal = 12.dp),
-            enabled = state.canExplain && state.commentary == null
-        ) {
-            Text(
-                "💡 Explain this move",
-                color = if (state.canExplain && state.commentary == null)
-                    Color(0xFFE8B84B) else Color.Transparent
-            )
-        }
-
-        // Commentary card — loading spinner or explanation text
-        val commentary = state.commentary
-        if (commentary != null) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A4A))
-            ) {
-                if (commentary.isEmpty()) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = Color(0xFFE8B84B)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Analyzing move...", color = Color(0xFFAAAAAA), fontSize = 13.sp)
-                    }
-                } else {
-                    Text(
-                        text = commentary,
-                        modifier = Modifier.padding(12.dp),
-                        color = Color(0xFFDDDDDD),
-                        fontSize = 13.sp,
-                        lineHeight = 19.sp
-                    )
-                }
-            }
-        }
 
         Spacer(Modifier.height(8.dp))
     }

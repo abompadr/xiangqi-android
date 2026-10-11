@@ -27,12 +27,6 @@ android {
                 cppFlags += listOf("-std=c++17", "-O3", "-DNDEBUG", "-DNNUE_EMBEDDING_OFF")
             }
         }
-
-        // Gemini API key — add gemini_api_key=AIza... to local.properties
-        buildConfigField(
-            "String", "GEMINI_API_KEY",
-            "\"${project.findProperty("gemini_api_key") ?: ""}\""
-        )
     }
 
     externalNativeBuild {
@@ -65,7 +59,6 @@ android {
     }
     buildFeatures {
         compose = true
-        buildConfig = true
     }
 }
 
@@ -82,9 +75,6 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.material)
-    implementation(libs.okhttp)
-    implementation(libs.androidx.datastore.preferences)
-
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
