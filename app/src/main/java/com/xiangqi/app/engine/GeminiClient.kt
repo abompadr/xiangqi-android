@@ -12,7 +12,7 @@ import org.json.JSONObject
 object GeminiClient {
     private val client = OkHttpClient()
     private const val URL =
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
     suspend fun explain(prompt: String, apiKey: String): String = withContext(Dispatchers.IO) {
         val body = JSONObject()

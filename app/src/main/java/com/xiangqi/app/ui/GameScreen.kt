@@ -154,14 +154,17 @@ fun GameScreen(
         // Red timer (bottom — player side)
         TimerBar(state.redTimeMs, state.board.redToMove && state.status == GameStatus.PLAYING, "Red ▼")
 
-        // Explain button — shown after each engine move, dismissed when player moves
-        if (state.canExplain && state.commentary == null) {
-            TextButton(
-                onClick = { vm.explainLastMove(geminiApiKey) },
-                modifier = Modifier.padding(horizontal = 12.dp)
-            ) {
-                Text("💡 Explain this move", color = Color(0xFFE8B84B))
-            }
+        // Explain button — always takes up space to prevent board resize
+        TextButton(
+            onClick = { vm.explainLastMove(geminiApiKey) },
+            modifier = Modifier.padding(horizontal = 12.dp),
+            enabled = state.canExplain && state.commentary == null
+        ) {
+            Text(
+                "💡 Explain this move",
+                color = if (state.canExplain && state.commentary == null)
+                    Color(0xFFE8B84B) else Color.Transparent
+            )
         }
 
         // Commentary card — loading spinner or explanation text
