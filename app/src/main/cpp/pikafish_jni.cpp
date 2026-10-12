@@ -220,9 +220,14 @@ Java_com_xiangqi_app_engine_PikafishEngine_nativeStart(JNIEnv* env, jobject, jst
         install_crash_handler();
         LOGI("Engine thread: starting UCIEngine");
         try {
-            char  progName[] = "pikafish";
-            char* argv[]     = {progName};
-            LOGI("Engine thread: constructing CommandLine");
+            // Pass the NNUE file path as argv[0] so Engine::Engine() derives
+            // binaryDirectory from its parent directory and finds pikafish.nnue
+            // during construction — before loop() runs and before setoption is sent.
+            std::string progPath = g_nnuePath.empty() ? "pikafish" : g_nnuePath;
+            std::vector<char> progBuf(progPath.begin(), progPath.end());
+            progBuf.push_back('\0');
+            char* argv[] = {progBuf.data()};
+            LOGI("Engine thread: constructing CommandLine with argv[0]=%s", argv[0]);
             Stockfish::CommandLine cli(1, argv);
             LOGI("Engine thread: CommandLine done");
             LOGI("Engine thread: about to call UCIEngine ctor");
@@ -230,9 +235,6 @@ Java_com_xiangqi_app_engine_PikafishEngine_nativeStart(JNIEnv* env, jobject, jst
             Stockfish::Position::init();
             Stockfish::UCIEngine uci(std::move(cli));
             LOGI("Engine thread: UCIEngine ctor done, entering loop()");
-            // Tell engine where to find the NNUE weights file.
-            if (!g_nnuePath.empty())
-                g_inBuf->push("setoption name EvalFile value " + g_nnuePath);
             uci.loop();
             LOGI("Engine thread: loop() returned normally");
         } catch (const std::exception& e) {
