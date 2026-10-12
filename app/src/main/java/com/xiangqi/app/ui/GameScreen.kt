@@ -21,11 +21,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.xiangqi.app.data.Profile
-import com.xiangqi.app.data.SavedGame
 import com.xiangqi.app.engine.Piece
 import com.xiangqi.app.engine.XiangqiBoard
 import com.xiangqi.app.engine.XqSquare
-import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.min
 
@@ -57,19 +55,15 @@ private val BLACK_LABELS = mapOf(
 fun GameScreen(
     profile: Profile,
     onBack: () -> Unit,
-    resume: SavedGame? = null,
     vm: GameViewModel = viewModel()
 ) {
     val state by vm.state.collectAsState()
     var showRules by remember { mutableStateOf(false) }
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(profile) { vm.startGame(profile, resume) }
+    LaunchedEffect(profile) { vm.startGame(profile) }
 
     Scaffold(
         containerColor = BG,
-        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
     Column(
         modifier = Modifier
@@ -102,9 +96,6 @@ fun GameScreen(
         ) {
             TextButton(onClick = { vm.takeBack() }) { Text("↩ Take Back", color = Color(0xFF4A90D9)) }
             TextButton(onClick = { vm.resign() }) { Text("Resign", color = Color(0xFFE74C3C)) }
-            TextButton(onClick = {
-                vm.saveGame { scope.launch { snackbarHostState.showSnackbar("Game saved!") } }
-            }) { Text("💾 Save", color = Color(0xFF4CAF50)) }
             TextButton(onClick = { showRules = true }) { Text("? Rules", color = Color(0xFF8888AA)) }
         }
 

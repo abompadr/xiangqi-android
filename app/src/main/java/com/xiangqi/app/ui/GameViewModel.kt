@@ -3,9 +3,7 @@ package com.xiangqi.app.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.xiangqi.app.data.AppDatabase
 import com.xiangqi.app.data.Profile
-import com.xiangqi.app.data.SavedGame
 import com.xiangqi.app.engine.PikafishEngine
 import com.xiangqi.app.engine.XiangqiBoard
 import com.xiangqi.app.engine.XqSquare
@@ -34,7 +32,6 @@ data class GameState(
 class GameViewModel(app: Application) : AndroidViewModel(app) {
 
     private val engine = PikafishEngine(app)
-    private val savedGameDao = AppDatabase.getInstance(app).savedGameDao()
     private val _state = MutableStateFlow(GameState())
     val state: StateFlow<GameState> = _state
 
@@ -53,7 +50,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    fun startGame(p: Profile, resume: SavedGame? = null) {
+    fun startGame(p: Profile) {
         skillLevel = p.skillLevel
         playerIsRed = p.playAsRed
         profileName = p.name
@@ -61,27 +58,19 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val timeMs = if (p.timeControlMinutes == 0) Long.MAX_VALUE / 2
                      else p.timeControlMinutes * 60_000L
         val board = XiangqiBoard()
-        val moves = resume?.moveHistory?.split(" ")?.filter { it.isNotBlank() } ?: emptyList()
-        moves.forEach { board.applyUci(it) }
-        val lastMove = if (moves.size >= 2)
-            XqSquare.fromAlg(moves.last().substring(0, 2)) to
-            XqSquare.fromAlg(moves.last().substring(2, 4))
-        else null
         _state.value = GameState(
             board = board,
             redTimeMs = timeMs,
             blackTimeMs = timeMs,
-            lastMove = lastMove,
         )
         startTimer()
         viewModelScope.launch(exceptionHandler) {
             withContext(Dispatchers.IO) {
                 engine.start()
                 engine.setSkillLevel(skillLevel)
-                engine.setPosition(XiangqiBoard.START_FEN, moves)
+                engine.setPosition(XiangqiBoard.START_FEN)
             }
             engineReady = true
-            // If it's the engine's turn after resuming (or player chose Black), engine plays
             if (board.redToMove != playerIsRed) engineMove()
         }
     }
@@ -260,27 +249,6 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             withContext(Dispatchers.IO) {
                 engine.setPosition(XiangqiBoard.START_FEN, board.moveHistory)
             }
-        }
-    }
-
-    fun saveGame(onSaved: () -> Unit) {
-        val s = _state.value
-        val moves = s.board.moveHistory.joinToString(" ")
-        val isCompleted = s.status != GameStatus.PLAYING
-        viewModelScope.launch {
-            val now = System.currentTimeMillis()
-            val date = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US).format(java.util.Date(now))
-            savedGameDao.insert(SavedGame(
-                label = "$profileName · $date",
-                profileName = profileName,
-                skillLevel = skillLevel,
-                timeControlMinutes = timeControlMinutes,
-                playerIsRed = playerIsRed,
-                moveHistory = moves,
-                isCompleted = isCompleted,
-                savedAt = now
-            ))
-            onSaved()
         }
     }
 
