@@ -1,0 +1,69 @@
+# Xiangqi opening lines in ICCS move notation
+# Format: <space-separated moves> | <English name>
+# Moves are from Red's perspective: files a-i, ranks 0-9 (0=Red back rank, 9=Black back rank)
+# Lines are ordered longest-first within each family so the matcher picks the most specific name.
+# Red moves first (odd positions 1,3,5,...); Black moves second (even positions 2,4,6,...).
+
+# ── Central Cannon (炮二平五) openings ─────────────────────────────────────────
+# Red opens h2e2 (right cannon to centre)
+
+h2e2 h9g7 b0c2 b9c7 h0g2 | Central Cannon vs. Knight Defense (双马防炮)
+h2e2 h9g7 b0c2 b9c7 | Central Cannon vs. Knight Defense
+h2e2 h7e7 h0g2 h9g7 b0c2 b9c7 | Central Cannon vs. Screen Horse Cannon
+h2e2 h7e7 h0g2 h9g7 | Central Cannon vs. Screen Horse Cannon
+h2e2 h7e7 | Central Cannon vs. Screen Horse Cannon
+h2e2 b7e7 h0g2 h9g7 | Central Cannon vs. Opposite Direction Cannon
+h2e2 b7e7 | Central Cannon vs. Opposite Direction Cannon
+h2e2 h9g7 | Central Cannon vs. Right Horse Defense
+h2e2 c9e7 | Central Cannon vs. Elephant Defense
+h2e2 d9e8 | Central Cannon vs. Advisor Defense
+h2e2 | Central Cannon
+
+# ── Same Direction Cannon (顺炮) ───────────────────────────────────────────────
+# Both sides advance the cannon on the same flank
+
+h2e2 h7e7 b0c2 b7e7 | Same Direction Cannon (顺炮)
+b2e2 b7e7 h0g2 h9g7 | Left Same Direction Cannon
+
+# ── Opposite Direction Cannon (列炮) ──────────────────────────────────────────
+# Red opens with one cannon, Black counters with the opposite cannon
+
+h2e2 b7e7 | Opposite Direction Cannon (列炮)
+
+# ── Cannon vs. Elephant (炮对象) ──────────────────────────────────────────────
+
+h2e2 c9e7 b0c2 g9e7 | Central Cannon vs. Elephant Defense
+h2e2 g9e7 | Central Cannon vs. Left Elephant Defense
+
+# ── Horse Opening (起马局) ─────────────────────────────────────────────────────
+# Red develops a horse first rather than advancing cannon
+
+h0g2 h9g7 b0c2 b9c7 | Horse Opening — Mirrored Knights
+h0g2 h9g7 | Horse Opening
+b0c2 b9c7 h0g2 h9g7 | Double Knight Opening (双马局)
+b0c2 b9c7 | Knight Opening
+
+# ── Elephant Opening (飞象局) ──────────────────────────────────────────────────
+# Red develops elephant early, solid defensive formation
+
+c0e2 g9e7 g0e2 | Elephant Opening — Mirrored Elephant
+c0e2 | Elephant Opening (飞象局)
+
+# ── Pawn Opening / Advancing Pawn (兵底炮 / 过宫炮) ──────────────────────────
+
+a3a4 | Flank Pawn Opening (边兵局)
+i3i4 | Flank Pawn Opening (边兵局)
+e3e4 | Central Pawn Opening (中兵局)
+c3c4 | Pawn Opening
+
+# ── Palacegate Cannon / Immortal's Finger (过宫炮) ───────────────────────────
+# Cannon slides across to threaten from the opposite side
+
+h2d2 | Palacegate Cannon (过宫炮)
+b2f2 | Left Palacegate Cannon
+
+# ── Three-Step Tiger (三步虎) ─────────────────────────────────────────────────
+# Classic Red attacking formation: cannon centre + horse + chariot
+
+h2e2 h9g7 h0g2 b9c7 a0a1 | Three-Step Tiger (三步虎)
+h2e2 h9g7 h0g2 b9c7 | Three-Step Tiger (三步虎)

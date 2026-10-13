@@ -101,6 +101,16 @@ fun GameScreen(
         }
         }
 
+        // Opening name label
+        if (state.openingName != null) {
+            Text(
+                text = state.openingName,
+                color = Color(0xFFE8B84B),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 1.dp)
+            )
+        }
+
         // Game-over banner (shown above the board, board stays visible)
         if (state.status != GameStatus.PLAYING) {
             val msg = when (state.status) {

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.xiangqi.app.data.Profile
+import com.xiangqi.app.engine.OpeningBook
 import com.xiangqi.app.engine.PikafishEngine
 import com.xiangqi.app.engine.XiangqiBoard
 import com.xiangqi.app.engine.XqSquare
@@ -30,6 +31,7 @@ data class GameState(
     val replayMode: Boolean = false,
     val replayIndex: Int = 0,
     val completedMoveHistory: List<String> = emptyList(),
+    val openingName: String? = null,
 )
 
 class GameViewModel(app: Application) : AndroidViewModel(app) {
@@ -37,6 +39,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     private val engine = PikafishEngine(app)
     private val _state = MutableStateFlow(GameState())
     val state: StateFlow<GameState> = _state
+
+    init { OpeningBook.load(app) }
 
     private var timerJob: Job? = null
     private var skillLevel: Int = 10
@@ -114,7 +118,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val s = _state.value
         val uci = "${from}${to}"
         s.board.applyUci(uci)
-        _state.value = s.copy(selected = null, lastMove = from to to)
+        _state.value = s.copy(selected = null, lastMove = from to to,
+            openingName = OpeningBook.lookup(s.board.moveHistory))
         checkGameOver()
         if (_state.value.status == GameStatus.PLAYING) {
             viewModelScope.launch(exceptionHandler) { engineMove() }
@@ -169,6 +174,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(
                 engineThinking = false,
                 lastMove = from to to,
+                openingName = OpeningBook.lookup(_state.value.board.moveHistory),
             )
             checkGameOver()
         } catch (t: Throwable) {
