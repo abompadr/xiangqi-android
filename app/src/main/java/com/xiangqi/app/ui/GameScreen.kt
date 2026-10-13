@@ -83,10 +83,11 @@ fun GameScreen(
         ) {
             TextButton(onClick = onBack) { Text("← Back", color = Color(0xFF8888AA)) }
             Spacer(Modifier.weight(1f))
-            Text(profile.name, color = Color.White, fontWeight = FontWeight.Bold)
+            Text("象棋  Xiangqi", color = Color(0xFFE8B84B), fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
         }
-        // Top bar — row 2: actions
+        // Top bar — row 2: actions (hidden during replay)
+        if (!state.replayMode) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -97,6 +98,30 @@ fun GameScreen(
             TextButton(onClick = { vm.takeBack() }) { Text("↩ Take Back", color = Color(0xFF4A90D9)) }
             TextButton(onClick = { vm.resign() }) { Text("Resign", color = Color(0xFFE74C3C)) }
             TextButton(onClick = { showRules = true }) { Text("? Rules", color = Color(0xFF8888AA)) }
+        }
+        }
+
+        // Game-over banner (shown above the board, board stays visible)
+        if (state.status != GameStatus.PLAYING) {
+            val msg = when (state.status) {
+                GameStatus.RED_WIN      -> "Red wins!"
+                GameStatus.BLACK_WIN    -> "Black wins!"
+                GameStatus.ENGINE_ERROR -> "Engine error"
+                else                    -> "Draw"
+            }
+            val bannerColor = when (state.status) {
+                GameStatus.RED_WIN   -> Color(0xFF6B1A1A)
+                GameStatus.BLACK_WIN -> Color(0xFF1A1A1A)
+                else                 -> Color(0xFF2A3A2A)
+            }
+            GameOverBanner(
+                message = msg,
+                bannerColor = bannerColor,
+                replayMode = state.replayMode,
+                onReplay = { vm.startReplay() },
+                onPlayAgain = { vm.playAgain() },
+                onBack = onBack
+            )
         }
 
         // Black timer (top — engine side)
@@ -142,7 +167,17 @@ fun GameScreen(
         // Red timer (bottom — player side)
         TimerBar(state.redTimeMs, state.board.redToMove && state.status == GameStatus.PLAYING, "Red ▼")
 
-        Spacer(Modifier.height(8.dp))
+        // Replay nav row (replaces the bottom spacer when in replay mode)
+        if (state.replayMode) {
+            ReplayNavRow(
+                index = state.replayIndex,
+                total = state.completedMoveHistory.size,
+                onPrev = { vm.replayPrev() },
+                onNext = { vm.replayNext() }
+            )
+        } else {
+            Spacer(Modifier.height(8.dp))
+        }
     }
 
     // Rules dialog
@@ -150,16 +185,6 @@ fun GameScreen(
         RulesDialog(onDismiss = { showRules = false })
     }
 
-    // Game-over overlay
-    if (state.status != GameStatus.PLAYING) {
-        val msg = when (state.status) {
-            GameStatus.RED_WIN      -> "Red wins!"
-            GameStatus.BLACK_WIN    -> "Black wins!"
-            GameStatus.ENGINE_ERROR -> "Engine error:\n${state.errorMessage}"
-            else                    -> "Draw"
-        }
-        GameOverOverlay(msg, onPlayAgain = { vm.playAgain() }, onBack = onBack)
-    }
     } // end Scaffold
 }
 
@@ -343,25 +368,50 @@ private fun XiangqiBoardView(
     }
 }
 
-// ── Game-over overlay ─────────────────────────────────────────────────────────
+// ── Game-over banner ──────────────────────────────────────────────────────────
 @Composable
-private fun GameOverOverlay(message: String, onPlayAgain: () -> Unit, onBack: () -> Unit) {
-    Box(
+private fun GameOverBanner(
+    message: String,
+    bannerColor: Color,
+    replayMode: Boolean,
+    onReplay: () -> Unit,
+    onPlayAgain: () -> Unit,
+    onBack: () -> Unit,
+) {
+    Row(
         modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xCC000000)),
-        contentAlignment = Alignment.Center
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 2.dp)
+            .background(bannerColor, RoundedCornerShape(8.dp))
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(message, color = Color.White, fontSize = 30.sp,
-                fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(24.dp))
-            Button(
-                onClick = onPlayAgain,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE8B84B))
-            ) { Text("Play Again (swap colors)", color = Color.Black, fontWeight = FontWeight.Bold) }
-            Spacer(Modifier.height(12.dp))
-            OutlinedButton(onClick = onBack) { Text("Back to Profiles", color = Color.White) }
+        Text(message, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp,
+            modifier = Modifier.weight(1f))
+        if (!replayMode) {
+            TextButton(onClick = onReplay) { Text("↺ Replay", color = Color(0xFFE8B84B), fontSize = 13.sp) }
+        }
+        TextButton(onClick = onPlayAgain) { Text("Play Again", color = Color(0xFF4CAF50), fontSize = 13.sp) }
+        TextButton(onClick = onBack) { Text("← Back", color = Color(0xFF8888AA), fontSize = 13.sp) }
+    }
+}
+
+// ── Replay navigation row ─────────────────────────────────────────────────────
+@Composable
+private fun ReplayNavRow(index: Int, total: Int, onPrev: () -> Unit, onNext: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TextButton(onClick = onPrev, enabled = index > 0) {
+            Text("‹ Prev", color = if (index > 0) Color(0xFF4A90D9) else Color(0xFF444466))
+        }
+        Text("Move $index / $total", color = Color.White, fontSize = 14.sp)
+        TextButton(onClick = onNext, enabled = index < total) {
+            Text("Next ›", color = if (index < total) Color(0xFF4A90D9) else Color(0xFF444466))
         }
     }
 }

@@ -27,6 +27,9 @@ data class GameState(
     val engineThinking: Boolean = false,
     val lastMove: Pair<XqSquare, XqSquare>? = null,
     val errorMessage: String = "",
+    val replayMode: Boolean = false,
+    val replayIndex: Int = 0,
+    val completedMoveHistory: List<String> = emptyList(),
 )
 
 class GameViewModel(app: Application) : AndroidViewModel(app) {
@@ -40,7 +43,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     private var playerIsRed: Boolean = true
     private var engineReady = false
     private var profileName: String = ""
-    private var timeControlMinutes: Int = 0
+    private var computerTimeMinutes: Int = 5
+    private var playerTimeMinutes: Int = 0
 
     private val exceptionHandler = CoroutineExceptionHandler { _, t ->
         _state.value = _state.value.copy(
@@ -54,14 +58,19 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         skillLevel = p.skillLevel
         playerIsRed = p.playAsRed
         profileName = p.name
-        timeControlMinutes = p.timeControlMinutes
-        val timeMs = if (p.timeControlMinutes == 0) Long.MAX_VALUE / 2
-                     else p.timeControlMinutes * 60_000L
+        computerTimeMinutes = p.computerTimeMinutes
+        playerTimeMinutes = p.playerTimeMinutes
+        val computerTimeMs = if (p.computerTimeMinutes == 0) Long.MAX_VALUE / 2
+                             else p.computerTimeMinutes * 60_000L
+        val playerTimeMs   = if (p.playerTimeMinutes == 0) Long.MAX_VALUE / 2
+                             else p.playerTimeMinutes * 60_000L
+        val redTimeMs   = if (p.playAsRed) playerTimeMs   else computerTimeMs
+        val blackTimeMs = if (p.playAsRed) computerTimeMs else playerTimeMs
         val board = XiangqiBoard()
         _state.value = GameState(
             board = board,
-            redTimeMs = timeMs,
-            blackTimeMs = timeMs,
+            redTimeMs = redTimeMs,
+            blackTimeMs = blackTimeMs,
         )
         startTimer()
         viewModelScope.launch(exceptionHandler) {
@@ -78,6 +87,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun onSquareTapped(sq: XqSquare) {
         val s = _state.value
         if (s.status != GameStatus.PLAYING) return
+        if (s.replayMode) return
         if (s.engineThinking) return
         if (s.board.redToMove != playerIsRed) return   // not player's turn
 
@@ -218,15 +228,11 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun playAgain() {
-        val current = _state.value
-        // Reverse colors and restart with same profile settings
         val reversedProfile = com.xiangqi.app.data.Profile(
-            id = 0,
-            name = "",
-            skillLevel = skillLevel,
-            timeControlMinutes = if (_state.value.redTimeMs > 30 * 60_000L * 10) 0
-                                  else (_state.value.redTimeMs / 60_000L).toInt(),
-            playAsRed = !playerIsRed
+            skillLevel          = skillLevel,
+            computerTimeMinutes = computerTimeMinutes,
+            playerTimeMinutes   = playerTimeMinutes,
+            playAsRed           = !playerIsRed
         )
         startGame(reversedProfile)
     }
@@ -255,6 +261,43 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun resign() {
         _state.value = _state.value.copy(status = GameStatus.BLACK_WIN)
         timerJob?.cancel()
+    }
+
+    fun startReplay() {
+        val history = _state.value.board.moveHistory.toList()
+        val board = XiangqiBoard()
+        _state.value = _state.value.copy(
+            replayMode = true,
+            replayIndex = 0,
+            completedMoveHistory = history,
+            board = board,
+            lastMove = null,
+            selected = null
+        )
+    }
+
+    fun replayNext() {
+        val s = _state.value
+        if (!s.replayMode || s.replayIndex >= s.completedMoveHistory.size) return
+        val uci = s.completedMoveHistory[s.replayIndex]
+        s.board.applyUci(uci)
+        val from = XqSquare.fromAlg(uci.substring(0, 2))
+        val to   = XqSquare.fromAlg(uci.substring(2, 4))
+        _state.value = s.copy(replayIndex = s.replayIndex + 1, lastMove = from to to)
+    }
+
+    fun replayPrev() {
+        val s = _state.value
+        if (!s.replayMode || s.replayIndex <= 0) return
+        val newIndex = s.replayIndex - 1
+        val history = s.completedMoveHistory.take(newIndex)
+        val board = XiangqiBoard()
+        history.forEach { board.applyUci(it) }
+        val lastMove = if (newIndex > 0) {
+            val prev = s.completedMoveHistory[newIndex - 1]
+            XqSquare.fromAlg(prev.substring(0, 2)) to XqSquare.fromAlg(prev.substring(2, 4))
+        } else null
+        _state.value = s.copy(board = board, replayIndex = newIndex, lastMove = lastMove)
     }
 
     override fun onCleared() {
