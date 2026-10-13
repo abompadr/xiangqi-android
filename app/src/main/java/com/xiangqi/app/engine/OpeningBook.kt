@@ -4,35 +4,39 @@ import android.content.Context
 
 object OpeningBook {
 
-    // Each entry: moves (list of UCI strings) → name
-    private data class Line(val moves: List<String>, val name: String)
-
-    private var lines: List<Line> = emptyList()
+    // Maps FEN (position after the line's moves) → opening name.
+    // Multiple lines can map to the same FEN (transpositions share the same entry).
+    // When two lines reach the same FEN, the longer one's name wins (more specific).
+    private var fenToName: Map<String, String> = emptyMap()
 
     fun load(ctx: Context) {
-        if (lines.isNotEmpty()) return
-        lines = ctx.assets.open("openings.txt").bufferedReader().lineSequence()
+        if (fenToName.isNotEmpty()) return
+        val map = mutableMapOf<String, Pair<Int, String>>() // fen → (depth, name)
+        ctx.assets.open("openings.txt").bufferedReader().lineSequence()
             .map { it.trim() }
             .filter { it.isNotEmpty() && !it.startsWith("#") }
-            .mapNotNull { raw ->
+            .forEach { raw ->
                 val parts = raw.split("|")
-                if (parts.size < 2) return@mapNotNull null
+                if (parts.size < 2) return@forEach
                 val moves = parts[0].trim().split(" ").filter { it.isNotBlank() }
                 val name  = parts[1].trim()
-                if (moves.isEmpty() || name.isEmpty()) null else Line(moves, name)
+                if (moves.isEmpty() || name.isEmpty()) return@forEach
+                // Replay the line on a scratch board to get the resulting FEN
+                val board = XiangqiBoard()
+                for (uci in moves) board.applyUci(uci)
+                val fen = board.toFen()
+                // Keep the deeper (more specific) name if two lines reach the same position
+                val existing = map[fen]
+                if (existing == null || moves.size > existing.first) {
+                    map[fen] = moves.size to name
+                }
             }
-            // Longest lines first so we always match the most specific name
-            .sortedByDescending { it.moves.size }
-            .toList()
+        fenToName = map.mapValues { it.value.second }
     }
 
-    /** Returns the name of the most specific opening that is a prefix of [history], or null. */
-    fun lookup(history: List<String>): String? {
-        if (history.isEmpty()) return null
-        // Find all lines whose move list is a prefix of history (or equal to it)
-        return lines.firstOrNull { line ->
-            history.size >= line.moves.size &&
-                history.subList(0, line.moves.size) == line.moves
-        }?.name
+    /** Returns the opening name for the current [board] position, or null if not in book. */
+    fun lookup(board: XiangqiBoard): String? {
+        if (board.moveHistory.isEmpty()) return null
+        return fenToName[board.toFen()]
     }
 }

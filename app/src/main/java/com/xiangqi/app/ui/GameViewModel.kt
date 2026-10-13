@@ -119,7 +119,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         val uci = "${from}${to}"
         s.board.applyUci(uci)
         _state.value = s.copy(selected = null, lastMove = from to to,
-            openingName = OpeningBook.lookup(s.board.moveHistory))
+            openingName = OpeningBook.lookup(s.board))
         checkGameOver()
         if (_state.value.status == GameStatus.PLAYING) {
             viewModelScope.launch(exceptionHandler) { engineMove() }
@@ -174,7 +174,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(
                 engineThinking = false,
                 lastMove = from to to,
-                openingName = OpeningBook.lookup(_state.value.board.moveHistory),
+                openingName = OpeningBook.lookup(_state.value.board),
             )
             checkGameOver()
         } catch (t: Throwable) {
