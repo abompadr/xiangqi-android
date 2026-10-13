@@ -102,9 +102,10 @@ fun GameScreen(
         }
 
         // Opening name label
-        if (state.openingName != null) {
+        val openingName = state.openingName
+        if (openingName != null) {
             Text(
-                text = state.openingName,
+                text = openingName,
                 color = Color(0xFFE8B84B),
                 fontSize = 12.sp,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 1.dp)
