@@ -8,6 +8,7 @@ object GamePrefs {
     private const val KEY_COMPUTER_TIME = "computer_time"
     private const val KEY_PLAYER_TIME = "player_time"
     private const val KEY_PLAY_AS_RED = "play_as_red"
+    private const val KEY_WESTERN_PIECES = "western_pieces"
 
     fun load(ctx: Context): Profile {
         val sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -15,7 +16,8 @@ object GamePrefs {
             skillLevel          = sp.getInt(KEY_SKILL, 10),
             computerTimeMinutes = sp.getInt(KEY_COMPUTER_TIME, 5),
             playerTimeMinutes   = sp.getInt(KEY_PLAYER_TIME, 0),
-            playAsRed           = sp.getBoolean(KEY_PLAY_AS_RED, true)
+            playAsRed           = sp.getBoolean(KEY_PLAY_AS_RED, true),
+            useWesternPieces    = sp.getBoolean(KEY_WESTERN_PIECES, false)
         )
     }
 
@@ -25,6 +27,7 @@ object GamePrefs {
             .putInt(KEY_COMPUTER_TIME, p.computerTimeMinutes)
             .putInt(KEY_PLAYER_TIME, p.playerTimeMinutes)
             .putBoolean(KEY_PLAY_AS_RED, p.playAsRed)
+            .putBoolean(KEY_WESTERN_PIECES, p.useWesternPieces)
             .apply()
     }
 }

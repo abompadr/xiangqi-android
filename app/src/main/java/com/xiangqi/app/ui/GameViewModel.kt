@@ -32,6 +32,8 @@ data class GameState(
     val replayIndex: Int = 0,
     val completedMoveHistory: List<String> = emptyList(),
     val openingName: String? = null,
+    val playerIsRed: Boolean = true,
+    val useWesternPieces: Boolean = false,
 )
 
 class GameViewModel(app: Application) : AndroidViewModel(app) {
@@ -45,6 +47,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     private var timerJob: Job? = null
     private var skillLevel: Int = 10
     private var playerIsRed: Boolean = true
+    private var useWesternPieces: Boolean = false
     private var engineReady = false
     private var profileName: String = ""
     private var computerTimeMinutes: Int = 5
@@ -61,6 +64,7 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
     fun startGame(p: Profile) {
         skillLevel = p.skillLevel
         playerIsRed = p.playAsRed
+        useWesternPieces = p.useWesternPieces
         profileName = p.name
         computerTimeMinutes = p.computerTimeMinutes
         playerTimeMinutes = p.playerTimeMinutes
@@ -75,6 +79,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             board = board,
             redTimeMs = redTimeMs,
             blackTimeMs = blackTimeMs,
+            playerIsRed = p.playAsRed,
+            useWesternPieces = p.useWesternPieces,
         )
         startTimer()
         viewModelScope.launch(exceptionHandler) {
@@ -238,7 +244,8 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
             skillLevel          = skillLevel,
             computerTimeMinutes = computerTimeMinutes,
             playerTimeMinutes   = playerTimeMinutes,
-            playAsRed           = !playerIsRed
+            playAsRed           = !playerIsRed,
+            useWesternPieces    = useWesternPieces
         )
         startGame(reversedProfile)
     }

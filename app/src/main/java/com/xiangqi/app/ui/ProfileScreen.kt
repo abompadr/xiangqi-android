@@ -28,6 +28,7 @@ fun GameSetupScreen(onPlay: (Profile) -> Unit) {
     var computerTime  by remember { mutableIntStateOf(saved.computerTimeMinutes) }
     var playerTime    by remember { mutableIntStateOf(saved.playerTimeMinutes) }
     var playAsRed     by remember { mutableStateOf(saved.playAsRed) }
+    var westernPieces by remember { mutableStateOf(saved.useWesternPieces) }
     var showRules     by remember { mutableStateOf(false) }
 
     Column(
@@ -60,11 +61,18 @@ fun GameSetupScreen(onPlay: (Profile) -> Unit) {
         Spacer(Modifier.height(16.dp))
 
         SetupSection(label = "Difficulty") {
-            ChipRow(
-                options = listOf("Beginner" to 0, "Easy" to 5, "Medium" to 10, "Hard" to 15, "Expert" to 20),
-                selected = skill,
-                onSelect = { skill = it }
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                ChipRow(
+                    options = listOf("Beginner" to 0, "Easy" to 5, "Medium" to 10),
+                    selected = skill,
+                    onSelect = { skill = it }
+                )
+                ChipRow(
+                    options = listOf("Hard" to 15, "Expert" to 20),
+                    selected = skill,
+                    onSelect = { skill = it }
+                )
+            }
         }
 
         Spacer(Modifier.height(16.dp))
@@ -104,6 +112,23 @@ fun GameSetupScreen(onPlay: (Profile) -> Unit) {
             }
         }
 
+        Spacer(Modifier.height(16.dp))
+
+        SetupSection(label = "Piece style") {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = !westernPieces,
+                    onClick = { westernPieces = false },
+                    label = { Text("Chinese 兵馬") }
+                )
+                FilterChip(
+                    selected = westernPieces,
+                    onClick = { westernPieces = true },
+                    label = { Text("Western PNBRCK") }
+                )
+            }
+        }
+
         Spacer(Modifier.height(32.dp))
 
         Button(
@@ -112,7 +137,8 @@ fun GameSetupScreen(onPlay: (Profile) -> Unit) {
                     skillLevel          = skill,
                     computerTimeMinutes = computerTime,
                     playerTimeMinutes   = playerTime,
-                    playAsRed           = playAsRed
+                    playAsRed           = playAsRed,
+                    useWesternPieces    = westernPieces
                 )
                 GamePrefs.save(ctx, profile)
                 onPlay(profile)

@@ -51,6 +51,19 @@ private val BLACK_LABELS = mapOf(
     Piece.GENERAL  to "將"
 )
 
+// Western labels: K=King/General, R=Rook/Chariot, N=Knight/Horse,
+// B=Bishop/Elephant, A=Advisor, C=Cannon, P=Pawn/Soldier
+private val RED_LABELS_WESTERN = mapOf(
+    Piece.SOLDIER  to "P", Piece.HORSE    to "N", Piece.ELEPHANT to "B",
+    Piece.ADVISOR  to "A", Piece.CHARIOT  to "R", Piece.CANNON   to "C",
+    Piece.GENERAL  to "K"
+)
+private val BLACK_LABELS_WESTERN = mapOf(
+    Piece.SOLDIER  to "p", Piece.HORSE    to "n", Piece.ELEPHANT to "b",
+    Piece.ADVISOR  to "a", Piece.CHARIOT  to "r", Piece.CANNON   to "c",
+    Piece.GENERAL  to "k"
+)
+
 @Composable
 fun GameScreen(
     profile: Profile,
@@ -101,42 +114,56 @@ fun GameScreen(
         }
         }
 
-        // Opening name label
-        val openingName = state.openingName
-        if (openingName != null) {
-            Text(
-                text = openingName,
-                color = Color(0xFFE8B84B),
-                fontSize = 12.sp,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 1.dp)
-            )
+        // Fixed-height slot for opening name + game-over banner.
+        // Always reserves space so the board never resizes when messages appear/disappear.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            if (state.status != GameStatus.PLAYING) {
+                val msg = when (state.status) {
+                    GameStatus.RED_WIN      -> "Red wins!"
+                    GameStatus.BLACK_WIN    -> "Black wins!"
+                    GameStatus.ENGINE_ERROR -> "Engine error"
+                    else                    -> "Draw"
+                }
+                val bannerColor = when (state.status) {
+                    GameStatus.RED_WIN   -> Color(0xFF6B1A1A)
+                    GameStatus.BLACK_WIN -> Color(0xFF1A1A1A)
+                    else                 -> Color(0xFF2A3A2A)
+                }
+                GameOverBanner(
+                    message = msg,
+                    bannerColor = bannerColor,
+                    replayMode = state.replayMode,
+                    onReplay = { vm.startReplay() },
+                    onPlayAgain = { vm.playAgain() },
+                    onBack = onBack
+                )
+            } else {
+                val openingName = state.openingName
+                if (openingName != null) {
+                    Text(
+                        text = openingName,
+                        color = Color(0xFFE8B84B),
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 1.dp)
+                    )
+                }
+            }
         }
 
-        // Game-over banner (shown above the board, board stays visible)
-        if (state.status != GameStatus.PLAYING) {
-            val msg = when (state.status) {
-                GameStatus.RED_WIN      -> "Red wins!"
-                GameStatus.BLACK_WIN    -> "Black wins!"
-                GameStatus.ENGINE_ERROR -> "Engine error"
-                else                    -> "Draw"
-            }
-            val bannerColor = when (state.status) {
-                GameStatus.RED_WIN   -> Color(0xFF6B1A1A)
-                GameStatus.BLACK_WIN -> Color(0xFF1A1A1A)
-                else                 -> Color(0xFF2A3A2A)
-            }
-            GameOverBanner(
-                message = msg,
-                bannerColor = bannerColor,
-                replayMode = state.replayMode,
-                onReplay = { vm.startReplay() },
-                onPlayAgain = { vm.playAgain() },
-                onBack = onBack
-            )
-        }
+        // When the player is Black the board is flipped: Black pieces at bottom, Red at top.
+        val flipped = !state.playerIsRed
 
-        // Black timer (top — engine side)
-        TimerBar(state.blackTimeMs, !state.board.redToMove && state.status == GameStatus.PLAYING, "Black ▲")
+        // Timer for the side at the top of the board (opponent when not flipped, player when flipped)
+        val topIsRed = flipped        // when flipped, Red is at top
+        val topTimeMs = if (topIsRed) state.redTimeMs else state.blackTimeMs
+        val topActive = if (topIsRed) state.board.redToMove else !state.board.redToMove
+        val topLabel  = if (topIsRed) "Red ▲" else "Black ▲"
+        TimerBar(topTimeMs, topActive && state.status == GameStatus.PLAYING, topLabel)
 
         // Board
         BoxWithConstraints(
@@ -146,11 +173,6 @@ fun GameScreen(
                 .padding(4.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Board canvas: 9 vertical lines × 10 horizontal lines.
-            // Add half-a-spacing padding on every side so edge pieces are never clipped.
-            // The playable grid spans 8 horizontal gaps and 9 vertical gaps.
-            // With padding p_h = boardW/16 left+right and p_v = boardH/18 top+bottom,
-            // the canvas is boardW × boardH but the lines start half a gap from each edge.
             val boardAspect = 9f / 10f
             val availW = maxWidth.value
             val availH = maxHeight.value
@@ -163,20 +185,22 @@ fun GameScreen(
                 boardH = maxHeight
                 boardW = (availH * boardAspect).dp
             }
-            val padH = boardW / 16   // half of one horizontal spacing (boardW/8 / 2)
-            val padV = boardH / 18   // half of one vertical spacing (boardH/9 / 2)
-            // Expand the canvas by one full spacing in each dimension so the wooden
-            // board extends beyond the outermost grid lines, while the grid itself
-            // stays the same size. The view is bigger; pieces/lines are unchanged.
+            val padH = boardW / 16
+            val padV = boardH / 18
             XiangqiBoardView(
                 state = state,
+                flipped = flipped,
                 modifier = Modifier.size(boardW + padH * 2, boardH + padV * 2),
                 onSquare = { vm.onSquareTapped(it) }
             )
         }
 
-        // Red timer (bottom — player side)
-        TimerBar(state.redTimeMs, state.board.redToMove && state.status == GameStatus.PLAYING, "Red ▼")
+        // Timer for the side at the bottom of the board
+        val botIsRed = !flipped
+        val botTimeMs = if (botIsRed) state.redTimeMs else state.blackTimeMs
+        val botActive = if (botIsRed) state.board.redToMove else !state.board.redToMove
+        val botLabel  = if (botIsRed) "Red ▼" else "Black ▼"
+        TimerBar(botTimeMs, botActive && state.status == GameStatus.PLAYING, botLabel)
 
         // Replay nav row (replaces the bottom spacer when in replay mode)
         if (state.replayMode) {
@@ -233,35 +257,30 @@ private fun formatTime(ms: Long): String {
 @Composable
 private fun XiangqiBoardView(
     state: GameState,
+    flipped: Boolean,
     modifier: Modifier,
     onSquare: (XqSquare) -> Unit
 ) {
     BoxWithConstraints(modifier = modifier) {
-        // The canvas is larger than the grid by one full spacing on each axis.
-        // Grid spacing is derived from the inner playable area (canvas minus margins).
-        val spacingW = maxWidth  / 10  // canvas = 8 gaps + 2 half-margins → 10 units wide
-        val spacingH = maxHeight / 11  // canvas = 9 gaps + 2 half-margins → 11 units tall
-        val marginX  = spacingW          // half-spacing margin on left and right
-        val marginY  = spacingH          // half-spacing margin on top and bottom
+        val spacingW = maxWidth  / 10
+        val spacingH = maxHeight / 11
+        val marginX  = spacingW
+        val marginY  = spacingH
 
-        // Draw board background, river, grid lines, and palace diagonals
         Canvas(modifier = Modifier.fillMaxSize()) {
             val sW = size.width  / 10f
             val sH = size.height / 11f
-            val mX = sW   // left/right margin
-            val mY = sH   // top/bottom margin
+            val mX = sW
+            val mY = sH
 
-            // Wooden board background — full canvas including margins
             drawRect(color = BOARD_BG)
 
-            // River band between horizontal lines 4 and 5
             drawRect(
                 color = RIVER_COLOR,
                 topLeft = Offset(0f, mY + 4 * sH),
                 size = androidx.compose.ui.geometry.Size(size.width, sH)
             )
 
-            // Vertical lines (interrupted at river for inner files)
             for (f in 0..8) {
                 val x = mX + f * sW
                 drawLine(LINE_COLOR, Offset(x, mY),            Offset(x, mY + 4 * sH), strokeWidth = 1.5f)
@@ -271,22 +290,24 @@ private fun XiangqiBoardView(
                 }
             }
 
-            // Horizontal lines
             for (r in 0..9) {
                 val y = mY + r * sH
                 drawLine(LINE_COLOR, Offset(mX, y), Offset(mX + 8 * sW, y), strokeWidth = 1.5f)
             }
 
-            // Palace diagonals — Black (rows 0-2, files 3-5)
+            // Palace diagonals — top palace (rows 0-2, files 3-5)
             drawLine(LINE_COLOR, Offset(mX + 3*sW, mY),        Offset(mX + 5*sW, mY + 2*sH), strokeWidth = 1.5f)
             drawLine(LINE_COLOR, Offset(mX + 5*sW, mY),        Offset(mX + 3*sW, mY + 2*sH), strokeWidth = 1.5f)
 
-            // Palace diagonals — Red (rows 7-9, files 3-5)
+            // Palace diagonals — bottom palace (rows 7-9, files 3-5)
             drawLine(LINE_COLOR, Offset(mX + 3*sW, mY + 7*sH), Offset(mX + 5*sW, mY + 9*sH), strokeWidth = 1.5f)
             drawLine(LINE_COLOR, Offset(mX + 5*sW, mY + 7*sH), Offset(mX + 3*sW, mY + 9*sH), strokeWidth = 1.5f)
         }
 
-        // River labels — centred in the river band
+        // River labels — centred in the river band.
+        // When flipped, swap "楚河"/"漢界" so they read correctly from each side.
+        val leftRiver  = if (!flipped) "楚  河" else "漢  界"
+        val rightRiver = if (!flipped) "漢  界" else "楚  河"
         Box(
             modifier = Modifier
                 .offset(x = marginX, y = marginY + spacingH * 4)
@@ -294,7 +315,7 @@ private fun XiangqiBoardView(
                 .height(spacingH),
             contentAlignment = Alignment.Center
         ) {
-            Text("楚  河", color = LINE_COLOR, fontSize = (spacingW.value * 0.5f).sp,
+            Text(leftRiver, color = LINE_COLOR, fontSize = (spacingW.value * 0.5f).sp,
                 fontWeight = FontWeight.Bold)
         }
         Box(
@@ -304,25 +325,28 @@ private fun XiangqiBoardView(
                 .height(spacingH),
             contentAlignment = Alignment.Center
         ) {
-            Text("漢  界", color = LINE_COLOR, fontSize = (spacingW.value * 0.5f).sp,
+            Text(rightRiver, color = LINE_COLOR, fontSize = (spacingW.value * 0.5f).sp,
                 fontWeight = FontWeight.Bold)
         }
 
-        // Pieces, highlights, and tap areas — centred on intersections
-        // Display: rank 9 (black back rank) at top (r=0), rank 0 (red) at bottom (r=9)
+        // Pieces, highlights, and tap areas.
+        // r=0 is displayed at the top; displayRank determines the board rank shown at row r.
+        // Normal:  displayRank = 9 - r  (rank 9 / Black at top, rank 0 / Red at bottom)
+        // Flipped: displayRank = r      (rank 0 / Red at top, rank 9 / Black at bottom)
+        val redLabels   = if (state.useWesternPieces) RED_LABELS_WESTERN   else RED_LABELS
+        val blackLabels = if (state.useWesternPieces) BLACK_LABELS_WESTERN else BLACK_LABELS
+
         for (r in 0..9) {
             for (f in 0..8) {
-                val displayRank = 9 - r
+                val displayRank = if (flipped) r else 9 - r
                 val sq = XqSquare(f, displayRank)
                 val isSelected = state.selected == sq
                 val isLastMove = state.lastMove?.let { it.first == sq || it.second == sq } == true
                 val piece = state.board.get(sq)
 
-                // Intersection pixel centre (offset by margin)
                 val cx = marginX + spacingW * f
                 val cy = marginY + spacingH * r
 
-                // Highlight: square centred on the intersection
                 if (isSelected || isLastMove) {
                     val hlSize = minOf(spacingW.value, spacingH.value).dp
                     Box(
@@ -333,7 +357,6 @@ private fun XiangqiBoardView(
                     )
                 }
 
-                // Tap area: half-spacing pad around each intersection
                 Box(
                     modifier = Modifier
                         .offset(x = cx - spacingW / 2, y = cy - spacingH / 2)
@@ -341,11 +364,10 @@ private fun XiangqiBoardView(
                         .clickable { onSquare(sq) }
                 )
 
-                // Piece — centred on the intersection
                 if (piece != Piece.EMPTY) {
                     val isRed = piece > 0
                     val absPiece = kotlin.math.abs(piece)
-                    val label = if (isRed) RED_LABELS[absPiece] ?: "?" else BLACK_LABELS[absPiece] ?: "?"
+                    val label = if (isRed) redLabels[absPiece] ?: "?" else blackLabels[absPiece] ?: "?"
                     val pieceSize = min(spacingW.value, spacingH.value) * 0.82f
 
                     Box(
