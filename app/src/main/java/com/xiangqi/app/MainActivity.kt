@@ -6,13 +6,19 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
 import com.xiangqi.app.data.Profile
+import com.xiangqi.app.engine.Puzzle
+import com.xiangqi.app.engine.PuzzleBook
 import com.xiangqi.app.ui.GameScreen
 import com.xiangqi.app.ui.GameSetupScreen
+import com.xiangqi.app.ui.PuzzleListScreen
+import com.xiangqi.app.ui.PuzzleScreen
 import com.xiangqi.app.ui.theme.XiangqiTheme
 
 private sealed interface Screen {
     object Setup : Screen
     data class Game(val profile: Profile) : Screen
+    object PuzzleList : Screen
+    data class Puzzle(val puzzle: com.xiangqi.app.engine.Puzzle, val index: Int) : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -24,13 +30,32 @@ class MainActivity : ComponentActivity() {
                 var screen by remember { mutableStateOf<Screen>(Screen.Setup) }
 
                 when (val s = screen) {
-                    Screen.Setup   -> GameSetupScreen(
-                        onPlay = { screen = Screen.Game(it) }
+                    Screen.Setup -> GameSetupScreen(
+                        onPlay    = { screen = Screen.Game(it) },
+                        onPuzzles = { screen = Screen.PuzzleList },
                     )
                     is Screen.Game -> GameScreen(
                         profile = s.profile,
                         onBack  = { screen = Screen.Setup },
                     )
+                    Screen.PuzzleList -> PuzzleListScreen(
+                        onPuzzle = { puzzle ->
+                            val idx = PuzzleBook.puzzles.indexOf(puzzle)
+                            screen = Screen.Puzzle(puzzle, idx)
+                        },
+                        onBack = { screen = Screen.Setup },
+                    )
+                    is Screen.Puzzle -> {
+                        val puzzles = PuzzleBook.puzzles
+                        val nextIndex = s.index + 1
+                        PuzzleScreen(
+                            puzzle = s.puzzle,
+                            onBack = { screen = Screen.PuzzleList },
+                            onNext = if (nextIndex < puzzles.size) {
+                                { screen = Screen.Puzzle(puzzles[nextIndex], nextIndex) }
+                            } else null,
+                        )
+                    }
                 }
             }
         }

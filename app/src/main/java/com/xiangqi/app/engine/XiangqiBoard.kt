@@ -50,6 +50,30 @@ class XiangqiBoard {
         moveHistory.clear()
     }
 
+    fun loadFen(fen: String) {
+        for (r in 0..9) board[r].fill(Piece.EMPTY)
+        moveHistory.clear()
+        val parts = fen.trim().split(" ")
+        val rows = parts[0].split("/")
+        // FEN rows are listed from rank 9 (top/Black) down to rank 0 (bottom/Red)
+        for ((rowIdx, rowStr) in rows.withIndex()) {
+            val rank = 9 - rowIdx
+            var file = 0
+            for (ch in rowStr) {
+                if (ch.isDigit()) { file += ch.digitToInt() } else {
+                    val abs = when (ch.lowercaseChar()) {
+                        'p' -> Piece.SOLDIER; 'n' -> Piece.HORSE; 'b' -> Piece.ELEPHANT
+                        'a' -> Piece.ADVISOR; 'r' -> Piece.CHARIOT; 'c' -> Piece.CANNON
+                        'k' -> Piece.GENERAL; else -> 0
+                    }
+                    board[rank][file] = if (ch.isUpperCase()) abs else -abs
+                    file++
+                }
+            }
+        }
+        redToMove = parts.getOrNull(1) != "b"
+    }
+
     fun get(rank: Int, file: Int): Int = board[rank][file]
     fun get(sq: XqSquare): Int = board[sq.rank][sq.file]
     fun setInternal(rank: Int, file: Int, value: Int) { board[rank][file] = value }

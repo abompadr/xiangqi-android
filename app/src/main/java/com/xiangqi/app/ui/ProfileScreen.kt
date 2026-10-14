@@ -20,7 +20,7 @@ private val BG     = Color(0xFF1A1A2E)
 private val ACCENT = Color(0xFFE8B84B)
 
 @Composable
-fun GameSetupScreen(onPlay: (Profile) -> Unit) {
+fun GameSetupScreen(onPlay: (Profile) -> Unit, onPuzzles: () -> Unit = {}) {
     val ctx = LocalContext.current
     val saved = remember { GamePrefs.load(ctx) }
 
@@ -147,6 +147,16 @@ fun GameSetupScreen(onPlay: (Profile) -> Unit) {
             colors = ButtonDefaults.buttonColors(containerColor = ACCENT)
         ) {
             Text("Play!", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        OutlinedButton(
+            onClick = onPuzzles,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = ACCENT)
+        ) {
+            Text("Puzzles  棋题", fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
 
         Spacer(Modifier.height(16.dp))

@@ -187,7 +187,7 @@ fun GameScreen(
             }
             val padH = boardW / 16
             val padV = boardH / 18
-            XiangqiBoardView(
+            XiangqiBoardViewPublic(
                 state = state,
                 flipped = flipped,
                 modifier = Modifier.size(boardW + padH * 2, boardH + padV * 2),
@@ -255,7 +255,7 @@ private fun formatTime(ms: Long): String {
 
 // ── Board view ────────────────────────────────────────────────────────────────
 @Composable
-private fun XiangqiBoardView(
+internal fun XiangqiBoardViewPublic(
     state: GameState,
     flipped: Boolean,
     modifier: Modifier,
