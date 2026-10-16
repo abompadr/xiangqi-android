@@ -1,5 +1,7 @@
 package com.xiangqi.app.ui
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -191,7 +193,8 @@ fun GameScreen(
                 state = state,
                 flipped = flipped,
                 modifier = Modifier.size(boardW + padH * 2, boardH + padV * 2),
-                onSquare = { vm.onSquareTapped(it) }
+                onSquare = { vm.onSquareTapped(it) },
+                onAnimationDone = { vm.onAnimationDone() }
             )
         }
 
@@ -259,8 +262,19 @@ internal fun XiangqiBoardViewPublic(
     state: GameState,
     flipped: Boolean,
     modifier: Modifier,
-    onSquare: (XqSquare) -> Unit
+    onSquare: (XqSquare) -> Unit,
+    onAnimationDone: () -> Unit = {},
 ) {
+    val animProgress = remember { Animatable(0f) }
+    val anim = state.animatingMove
+    LaunchedEffect(anim) {
+        if (anim != null) {
+            animProgress.snapTo(0f)
+            animProgress.animateTo(1f, animationSpec = tween(durationMillis = 200))
+            onAnimationDone()
+        }
+    }
+
     BoxWithConstraints(modifier = modifier) {
         val spacingW = maxWidth  / 10
         val spacingH = maxHeight / 11
@@ -304,8 +318,7 @@ internal fun XiangqiBoardViewPublic(
             drawLine(LINE_COLOR, Offset(mX + 5*sW, mY + 7*sH), Offset(mX + 3*sW, mY + 9*sH), strokeWidth = 1.5f)
         }
 
-        // River labels — centred in the river band.
-        // When flipped, swap "楚河"/"漢界" so they read correctly from each side.
+        // River labels
         val leftRiver  = if (!flipped) "楚  河" else "漢  界"
         val rightRiver = if (!flipped) "漢  界" else "楚  河"
         Box(
@@ -329,10 +342,6 @@ internal fun XiangqiBoardViewPublic(
                 fontWeight = FontWeight.Bold)
         }
 
-        // Pieces, highlights, and tap areas.
-        // r=0 is displayed at the top; displayRank determines the board rank shown at row r.
-        // Normal:  displayRank = 9 - r  (rank 9 / Black at top, rank 0 / Red at bottom)
-        // Flipped: displayRank = r      (rank 0 / Red at top, rank 9 / Black at bottom)
         val redLabels   = if (state.useWesternPieces) RED_LABELS_WESTERN   else RED_LABELS
         val blackLabels = if (state.useWesternPieces) BLACK_LABELS_WESTERN else BLACK_LABELS
 
@@ -342,7 +351,8 @@ internal fun XiangqiBoardViewPublic(
                 val sq = XqSquare(f, displayRank)
                 val isSelected = state.selected == sq
                 val isLastMove = state.lastMove?.let { it.first == sq || it.second == sq } == true
-                val piece = state.board.get(sq)
+                val suppressPiece = anim != null && (sq == anim.from || sq == anim.to)
+                val piece = if (suppressPiece) Piece.EMPTY else state.board.get(sq)
 
                 val cx = marginX + spacingW * f
                 val cy = marginY + spacingH * r
@@ -372,10 +382,7 @@ internal fun XiangqiBoardViewPublic(
 
                     Box(
                         modifier = Modifier
-                            .offset(
-                                x = cx - (pieceSize / 2).dp,
-                                y = cy - (pieceSize / 2).dp
-                            )
+                            .offset(x = cx - (pieceSize / 2).dp, y = cy - (pieceSize / 2).dp)
                             .size(pieceSize.dp)
                             .clip(CircleShape)
                             .background(PIECE_BG)
@@ -396,6 +403,50 @@ internal fun XiangqiBoardViewPublic(
                         )
                     }
                 }
+            }
+        }
+
+        // Floating piece drawn on top during animation
+        if (anim != null) {
+            val progress = animProgress.value
+            val isRed = anim.piece > 0
+            val absPiece = kotlin.math.abs(anim.piece)
+            val label = if (isRed) redLabels[absPiece] ?: "?" else blackLabels[absPiece] ?: "?"
+            val pieceSize = min(spacingW.value, spacingH.value) * 0.82f
+
+            // Convert board square to display row (same formula as above)
+            fun squareToRow(sq: XqSquare): Int = if (flipped) sq.rank else 9 - sq.rank
+
+            val fromRow = squareToRow(anim.from)
+            val toRow   = squareToRow(anim.to)
+            val fromCx = marginX + spacingW * anim.from.file
+            val fromCy = marginY + spacingH * fromRow
+            val toCx   = marginX + spacingW * anim.to.file
+            val toCy   = marginY + spacingH * toRow
+
+            val cx = fromCx + (toCx - fromCx) * progress
+            val cy = fromCy + (toCy - fromCy) * progress
+
+            Box(
+                modifier = Modifier
+                    .offset(x = cx - (pieceSize / 2).dp, y = cy - (pieceSize / 2).dp)
+                    .size(pieceSize.dp)
+                    .clip(CircleShape)
+                    .background(PIECE_BG),
+                contentAlignment = Alignment.Center
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val ringColor = if (isRed) RED_PIECE else BLACK_PIECE
+                    drawCircle(color = ringColor, style = Stroke(width = size.width * 0.07f))
+                }
+                Text(
+                    text = label,
+                    color = if (isRed) RED_PIECE else BLACK_PIECE,
+                    fontSize = (pieceSize * 0.52f).sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    lineHeight = (pieceSize * 0.52f).sp
+                )
             }
         }
     }

@@ -19,6 +19,8 @@ import kotlinx.coroutines.withContext
 
 enum class GameStatus { PLAYING, RED_WIN, BLACK_WIN, DRAW, ENGINE_ERROR }
 
+data class AnimatingMove(val from: XqSquare, val to: XqSquare, val piece: Int)
+
 data class GameState(
     val board: XiangqiBoard = XiangqiBoard(),
     val selected: XqSquare? = null,
@@ -34,6 +36,7 @@ data class GameState(
     val openingName: String? = null,
     val playerIsRed: Boolean = true,
     val useWesternPieces: Boolean = false,
+    val animatingMove: AnimatingMove? = null,
 )
 
 class GameViewModel(app: Application) : AndroidViewModel(app) {
@@ -176,11 +179,13 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
         try {
             val from = XqSquare.fromAlg(uci.substring(0, 2))
             val to   = XqSquare.fromAlg(uci.substring(2, 4))
+            val piece = _state.value.board.get(from)
             _state.value.board.applyUci(uci)
             _state.value = _state.value.copy(
                 engineThinking = false,
                 lastMove = from to to,
                 openingName = OpeningBook.lookup(_state.value.board),
+                animatingMove = AnimatingMove(from, to, piece),
             )
             checkGameOver()
         } catch (t: Throwable) {
@@ -237,6 +242,10 @@ class GameViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+    }
+
+    fun onAnimationDone() {
+        _state.value = _state.value.copy(animatingMove = null)
     }
 
     fun playAgain() {
