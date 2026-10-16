@@ -30,6 +30,7 @@ class PikafishEngine(context: Context) {
         nativeStart(nnuePath)
         send("uci")
         waitFor("uciok")
+        send("setoption name EvalFile value $nnuePath")
         send("isready")
         waitFor("readyok")
     }
