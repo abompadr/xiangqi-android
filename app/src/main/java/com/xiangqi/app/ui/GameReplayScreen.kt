@@ -24,26 +24,17 @@ fun GameReplayScreen(
     onBack: () -> Unit,
     onNext: (() -> Unit)? = null,
 ) {
-    // Board state driven by step index into game.solution
-    var stepIndex by remember(game) { mutableIntStateOf(0) }
-    val board = remember(game) { XiangqiBoard().also { it.loadFen(game.fen) } }
-    val appliedUpto = remember(game) { mutableIntStateOf(-1) }
+    val totalMoves = game.solution.size
 
-    // Advance or rewind board to match stepIndex
-    LaunchedEffect(game, stepIndex) {
-        val target = stepIndex.coerceIn(0, totalMoves)
-        val current = appliedUpto.value
-        if (target > current) {
-            for (i in (current + 1) until target) {
-                board.applyUci(game.solution[i])
-            }
-        } else if (target < current) {
-            board.loadFen(game.fen)
-            for (i in 0 until target) {
-                board.applyUci(game.solution[i])
-            }
+    // stepIndex = number of moves applied (0 = start position, totalMoves = end)
+    var stepIndex by remember(game) { mutableIntStateOf(0) }
+
+    // Board is always rebuilt from FEN + replaying up to stepIndex
+    val board = remember(game, stepIndex) {
+        XiangqiBoard().also { b ->
+            b.loadFen(game.fen)
+            for (i in 0 until stepIndex) b.applyUci(game.solution[i])
         }
-        appliedUpto.value = target
     }
 
     val lastMove: Pair<XqSquare, XqSquare>? = if (stepIndex > 0) {
@@ -51,9 +42,7 @@ fun GameReplayScreen(
         XqSquare.fromAlg(uci.substring(0, 2)) to XqSquare.fromAlg(uci.substring(2, 4))
     } else null
 
-    val totalMoves = game.solution.size
-    val moveNum = stepIndex          // moves applied so far
-    val sideLabel = if (moveNum % 2 == 0) "Red to move" else "Black to move"
+    val sideLabel = if (stepIndex % 2 == 0) "Red to move" else "Black to move"
 
     Column(
         modifier = Modifier
@@ -98,7 +87,7 @@ fun GameReplayScreen(
         // Move counter
         Text(
             text = if (stepIndex == totalMoves) "Game over · $totalMoves moves"
-                   else "Move $moveNum / $totalMoves · $sideLabel",
+                   else "Move $stepIndex / $totalMoves · $sideLabel",
             color = GOLD,
             fontSize = 13.sp,
             modifier = Modifier.padding(bottom = 4.dp),
