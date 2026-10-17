@@ -38,9 +38,9 @@ object PuzzleBook {
     }
 
     fun categoryLabel(category: Int) = when (category) {
-        1    -> "一步杀"
-        2    -> "两步杀"
-        3    -> "三步杀"
-        else -> "多步杀"
+        1    -> "Mate in 1"
+        2    -> "Mate in 2"
+        3    -> "Mate in 3"
+        else -> "Multi-move"
     }
 }

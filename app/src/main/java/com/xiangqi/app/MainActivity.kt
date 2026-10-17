@@ -24,6 +24,7 @@ private sealed interface Screen {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        PuzzleBook.load(this)
         enableEdgeToEdge()
         setContent {
             XiangqiTheme {
