@@ -74,7 +74,7 @@
   {
     "id": "kill-00000001",
     "title": "Checkmate Study #1",
-    "category": 4,
+    "category": 5,
     "hint": "廣東許銀川 (Red) vs 廣東呂  欽 (Black) · Red wins · 71 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -154,7 +154,7 @@
   {
     "id": "kill-00000002",
     "title": "Checkmate Study #2",
-    "category": 4,
+    "category": 5,
     "hint": "重慶洪  智 (Red) vs 浙江於幼華 (Black) · Red wins · 53 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -216,7 +216,7 @@
   {
     "id": "kill-00000003",
     "title": "Checkmate Study #3",
-    "category": 4,
+    "category": 5,
     "hint": "上海孫勇徵 (Red) vs 黑龍江趙國榮 (Black) · Black wins · 43 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -268,7 +268,7 @@
   {
     "id": "kill-00000004",
     "title": "Checkmate Study #4",
-    "category": 4,
+    "category": 5,
     "hint": "張佳瑜-11歲威海 (Red) vs 許銀川 (Black) · 2005 · Red wins · 42 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -319,7 +319,7 @@
   {
     "id": "kill-00000005",
     "title": "Checkmate Study #5",
-    "category": 4,
+    "category": 5,
     "hint": "蔣川 (Red) vs 孫勇徵 (Black) · Red wins · 133 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -461,7 +461,7 @@
   {
     "id": "kill-00000006",
     "title": "Checkmate Study #6",
-    "category": 4,
+    "category": 5,
     "hint": "蔣川 (Red) vs 孫勇徵 (Black) · Red wins · 133 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -603,7 +603,7 @@
   {
     "id": "kill-00000007",
     "title": "Checkmate Study #7",
-    "category": 4,
+    "category": 5,
     "hint": "Red wins · 51 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -663,7 +663,7 @@
   {
     "id": "kill-00000008",
     "title": "Checkmate Study #8",
-    "category": 4,
+    "category": 5,
     "hint": "七星大師（電腦） (Red) vs 呂欽 (Black) · Red wins · 79 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -751,7 +751,7 @@
   {
     "id": "kill-00000009",
     "title": "Checkmate Study #9",
-    "category": 4,
+    "category": 5,
     "hint": "Red wins · 38 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -3705,7 +3705,7 @@
   {
     "id": "kill-00000120",
     "title": "Checkmate Study #120",
-    "category": 4,
+    "category": 5,
     "hint": "Red wins · 44 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -3758,7 +3758,7 @@
   {
     "id": "kill-00000121",
     "title": "Checkmate Study #121",
-    "category": 4,
+    "category": 5,
     "hint": "Red wins · 53 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -3820,7 +3820,7 @@
   {
     "id": "kill-00000122",
     "title": "Checkmate Study #122",
-    "category": 4,
+    "category": 5,
     "hint": "Red wins · 61 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -3890,7 +3890,7 @@
   {
     "id": "kill-00000123",
     "title": "Checkmate Study #123",
-    "category": 4,
+    "category": 5,
     "hint": "陶漢明 (Red) vs 呂欽 (Black) · 2009 · Black wins · 74 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -3973,7 +3973,7 @@
   {
     "id": "kill-00000124",
     "title": "Checkmate Study #124",
-    "category": 4,
+    "category": 5,
     "hint": "陶漢明 (Red) vs 呂欽 (Black) · 2009 · Black wins · 74 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -4056,7 +4056,7 @@
   {
     "id": "kill-00000125",
     "title": "Checkmate Study #125",
-    "category": 4,
+    "category": 5,
     "hint": "陶漢明 (Red) vs 趙鑫鑫 (Black) · 2009 · Black wins · 56 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -4121,7 +4121,7 @@
   {
     "id": "kill-00000126",
     "title": "Checkmate Study #126",
-    "category": 4,
+    "category": 5,
     "hint": "陶漢明 (Red) vs 趙鑫鑫 (Black) · 2009 · Black wins · 56 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -4186,7 +4186,7 @@
   {
     "id": "kill-00000127",
     "title": "Checkmate Study #127",
-    "category": 4,
+    "category": 5,
     "hint": "趙國榮 (Red) vs 柳大華 (Black) · 1984 · Red wins · 49 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -4244,7 +4244,7 @@
   {
     "id": "kill-00000128",
     "title": "Checkmate Study #128",
-    "category": 4,
+    "category": 5,
     "hint": "趙國榮 (Red) vs 柳大華 (Black) · 1984 · Red wins · 49 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -4302,7 +4302,7 @@
   {
     "id": "kill-00000129",
     "title": "Checkmate Study #129",
-    "category": 4,
+    "category": 5,
     "hint": "黑龍江趙國榮 (Red) vs 廣東許銀川 (Black) · Red wins · 54 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
@@ -4365,7 +4365,7 @@
   {
     "id": "kill-00000130",
     "title": "Checkmate Study #130",
-    "category": 4,
+    "category": 5,
     "hint": "黑龍江趙國榮 (Red) vs 廣東許銀川 (Black) · Red wins · 54 moves",
     "fen": "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1",
     "solution": [
