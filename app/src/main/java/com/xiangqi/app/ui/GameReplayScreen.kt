@@ -93,7 +93,7 @@ fun GameReplayScreen(
             fontSize = 12.sp,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, bottom = 4.dp),
+                .padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
         )
 
         // Move counter
