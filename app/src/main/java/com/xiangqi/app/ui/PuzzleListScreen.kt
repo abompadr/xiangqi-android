@@ -25,7 +25,6 @@ private fun categoryColor(cat: Int) = when (cat) {
     1    -> Color(0xFF4CAF50)
     2    -> Color(0xFF4A90D9)
     3    -> Color(0xFFE8A020)
-    5    -> Color(0xFF9C27B0)
     else -> Color(0xFFCC2222)
 }
 
