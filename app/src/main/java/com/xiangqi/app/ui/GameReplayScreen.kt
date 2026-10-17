@@ -31,14 +31,13 @@ fun GameReplayScreen(
 
     // Advance or rewind board to match stepIndex
     LaunchedEffect(game, stepIndex) {
-        val target = stepIndex
+        val target = stepIndex.coerceIn(0, totalMoves)
         val current = appliedUpto.value
         if (target > current) {
-            for (i in (current + 1)..target) {
+            for (i in (current + 1) until target) {
                 board.applyUci(game.solution[i])
             }
         } else if (target < current) {
-            // Rewind: reload from FEN and replay up to target
             board.loadFen(game.fen)
             for (i in 0 until target) {
                 board.applyUci(game.solution[i])
